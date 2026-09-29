@@ -1,370 +1,407 @@
-# Duettino — Brief di progetto
+# Duettino — Project brief
 
-> Documento di partenza, frutto di una sessione di brainstorming. Serve da input per
-> `/grill-with-docs` (per ricavare `GLOSSARY.md` e le ADR) e poi `/to-spec` → `/to-tickets`.
-> Niente codice è stato ancora scritto.
+> English translation of the original Italian brief. Where it disagrees with GLOSSARY.md or docs/adr/, those win.
 
-## 0. Nome
+> Starting document, the outcome of a brainstorming session. It is the input for
+> `/grill-with-docs` (to derive `GLOSSARY.md` and the ADRs), then `/to-spec` → `/to-tickets`.
+> No code has been written yet.
 
-**Duettino**: un piccolo duetto, cioè le due fonti (quello che dici e quello che senti) insieme,
-in un'app piccola e leggera.
+## 0. Name
+
+**Duettino**: Italian for "a little duet", i.e. the two Sources (what you say and what you hear)
+together, in a small, lightweight app.
 
 - **Repo:** `duettino`
-- **Descrizione GitHub:** *Lightweight Windows recorder: mix any input device with whatever is
+- **GitHub description:** *Lightweight Windows recorder: mix any input device with whatever is
   playing on any output device into one MP3. Calls, meetings, videos, anything. No drivers.*
-  La funzione è generica; le call sono l'esempio principale (ed è la parola che la gente cerca),
-  non l'unico uso. Il README darà la spiegazione estesa (vedi §11).
-- **Perché non "Duetto":** ci sono 85 repository su GitHub con quel nome (quasi tutti
-  irrilevanti), ma soprattutto su Google domina [Duetto Research](https://www.duettocloud.com/en-us/),
-  un'azienda di software per hotel. Il nome sarebbe introvabile e ci sarebbe un piccolo
-  rischio di sovrapposizione col loro marchio. "Duettino" risultava libero (0 repository) a settembre 2026.
-- **Scartati:** *Earshot* (già usato da un'app commerciale che fa quasi la stessa cosa,
+  The feature is generic; calls are the main example (and the word people search for),
+  not the only use. The README will give the full explanation (see §11).
+- **Why not "Duetto":** there are 85 GitHub repositories with that name (almost all
+  irrelevant), but above all Google is dominated by [Duetto Research](https://www.duettocloud.com/en-us/),
+  a hotel software company. The name would be impossible to find and there would be a small
+  risk of overlapping with their trademark. "Duettino" was free (0 repositories) in September 2026.
+- **Discarded:** *Earshot* (already used by a commercial app that does almost the same thing,
   [tryearshot.app](https://tryearshot.app/)), *BothSides*, *HeadsetRec*, *TwoWay*.
 
-## 1. Problema
+## 1. Problem
 
-Voglio registrare le call di lavoro (Teams, Zoom, Meet, …) che faccio da PC Windows.
+I want to record the work calls (Teams, Zoom, Meet, …) I make from a Windows PC.
 
-- **Senza cuffie** è facile: le voci escono dalle casse e basta un telefono che registra.
-- **Con le cuffie** diventa impossibile: la voce degli altri esce solo nelle cuffie, nessun
-  registratore esterno la sente.
+- **Without headphones** it is easy: the voices come out of the speakers and a phone recording
+  the room is enough.
+- **With headphones** it becomes impossible: the other people's voices only come out of the
+  headphones, and no external recorder can hear them.
 
-Mi serve un'app **semplice e leggera** che registri insieme **un dispositivo di ingresso a
-scelta** (di solito il microfono) e **ciò che suona su un dispositivo di uscita a scelta**, in
-un unico file audio.
+I need a **simple, lightweight** app that records **an Input device of my choice** (usually
+the microphone) together with **whatever is playing on an Output device of my choice**, into
+a single audio file.
 
-Le cuffie sono il caso che ha fatto nascere il bisogno, ma **non sono un requisito**: l'uscita
-può essere anche le casse del PC, un monitor HDMI, una dock USB…, e l'ingresso un microfono
-qualsiasi, anche di un dispositivo diverso dall'uscita.
+Headphones are the case that created the need, but they are **not a requirement**: the Output
+can also be the PC speakers, an HDMI monitor, a USB dock…, and the Input any microphone, even
+on a different device from the Output.
 
-Anche le call sono solo il caso d'origine: l'app registra **qualsiasi cosa** stia suonando
-sull'Uscita insieme all'Ingresso, che si sia in call o no. Altri usi: webinar e lezioni
-online, video commentati, sessioni di gioco con la propria voce, prove musicali con una
-base, podcast da remoto.
+Calls are also just the original case: the app records **anything** playing on the Output
+together with the Input, whether you are on a call or not. Other uses: webinars and online
+lessons, commentated videos, gaming sessions with your own voice, music practice over a
+backing track, remote podcasts.
 
-## 2. Alternative valutate (settembre 2026)
+## 2. Alternatives evaluated (September 2026)
 
-| Strumento | Perché no |
+| Tool | Why not |
 |---|---|
-| OBS Studio | Fa il lavoro, ma è pesantissimo e pieno di funzioni che non servono. |
-| Xbox Game Bar | Scomoda; orientata a registrare giochi/video. |
-| [Audacity](https://windowsforum.com/news/record-windows-11-system-audio-in-audacity-with-wasapi-loopback.415374/) | Cattura il loopback WASAPI, ma **un solo dispositivo alla volta**: non mixa mic + uscita. |
-| [AudioCapture](https://github.com/masonasons/AudioCapture) | La più vicina (mic + audio di sistema in un file), ma nessun binario pronto, va compilata, ~40 stelle, fa molto di più del necessario (cattura per processo). |
-| [Reco](https://github.com/dosxnjos/reco) | Mic + loopback in MP3, ma ~810 MB per via della trascrizione Whisper integrata. |
-| [teamsrec-capture](https://github.com/drzdez/teamsrec-capture) | Legata a Teams, progetto di nicchia. |
-| [wasamix](https://github.com/ytchenak/wasamix) | Mixa verso un cavo virtuale, non registra su file. |
-| ScreenSnap Pro, EaseUS RecExperts | Commerciali, orientati allo schermo. |
-| Registrazione nativa Teams/Zoom | Avvisa tutti, finisce su OneDrive/cloud, non sempre disponibile. |
+| OBS Studio | Does the job, but it is very heavy and full of features we don't need. |
+| Xbox Game Bar | Awkward; geared towards recording games/video. |
+| [Audacity](https://windowsforum.com/news/record-windows-11-system-audio-in-audacity-with-wasapi-loopback.415374/) | Captures WASAPI loopback, but **only one device at a time**: it doesn't mix mic + output. |
+| [AudioCapture](https://github.com/masonasons/AudioCapture) | The closest (mic + system audio in one file), but no ready-made binary, you have to build it, ~40 stars, does much more than needed (per-process capture). |
+| [Reco](https://github.com/dosxnjos/reco) | Mic + loopback to MP3, but ~810 MB because of the built-in Whisper transcription. |
+| [teamsrec-capture](https://github.com/drzdez/teamsrec-capture) | Tied to Teams, niche project. |
+| [wasamix](https://github.com/ytchenak/wasamix) | Mixes into a virtual cable, doesn't record to a file. |
+| ScreenSnap Pro, EaseUS RecExperts | Commercial, screen-oriented. |
+| Teams/Zoom built-in recording | Notifies everyone, ends up on OneDrive/cloud, not always available. |
 
-**Conclusione:** nessuna soluzione è insieme semplice, leggera e pronta all'uso → la sviluppiamo.
+**Conclusion:** no solution is simple, lightweight and ready to use all at once → we build it.
 
-## 3. Decisioni prese
+## 3. Decisions taken
 
-Candidate a diventare ADR durante `/grill-with-docs`.
+Candidates to become ADRs during `/grill-with-docs`.
 
 1. **Stack: C# / .NET 10 + WinForms + NAudio.**
-   Eseguibile nativo, avvio istantaneo, leggero. NAudio è la libreria audio di riferimento
-   su .NET ed espone già sia la cattura del microfono (WASAPI) sia la cattura loopback.
-   L'SDK .NET 10 è già installato sulla macchina. Scartato Python + tkinter (packaging con
-   PyInstaller più pesante e lento all'avvio).
-2. **Nessun driver virtuale.** Si usa il **loopback WASAPI** nativo di Windows per
-   "ascoltare" il dispositivo di uscita. Niente Stereo Mix, niente VB-Cable.
-3. **UI: una finestrella singola**, niente tray per ora.
+   Native executable, instant startup, lightweight. NAudio is the reference audio library
+   on .NET and already exposes both microphone capture (WASAPI) and Loopback capture.
+   The .NET 10 SDK is already installed on the machine. Python + tkinter discarded (packaging
+   with PyInstaller is heavier and slower to start).
+2. **No virtual driver.** We use Windows' native **WASAPI loopback** to "listen" to the
+   Output device. No Stereo Mix, no VB-Cable.
+3. **UI: a single small window**, no tray for now.
    ```
    ┌─ Duettino ─────────────────────┐
-   │ Ingresso: [Mic webcam       ▼] │
+   │ Input:    [Webcam mic       ▼] │
    │  ▮▮▮▮▮▯▯▯▯▯                    │
-   │ Uscita:   [Casse Realtek    ▼] │
+   │ Output:   [Realtek speakers ▼] │
    │  ▮▮▮▯▯▯▯▯▯▯                    │
    │                                │
-   │   [ ● Registra ]    00:12:34   │
-   │ Salva in: Documenti\Registraz. │
+   │   [ ● Record ]      00:12:34   │
+   │ Save to: Documents\Recordings  │
    └────────────────────────────────┘
    ```
-4. **Output: un singolo MP3**, 48 kHz stereo, 128 kbps (~1 MB/min, ~60 MB/ora).
-5. **Le due voci mixate insieme** nello stesso audio (non canali separati, non file separati).
-6. **Encoding MP3 tramite Media Foundation di Windows** (encoder MP3 di sistema, esposto
-   da NAudio), quindi nessuna dipendenza nativa extra tipo LAME.
-7. **Ingresso e Uscita liberi e indipendenti.** Qualsiasi dispositivo di acquisizione attivo
-   come Ingresso e qualsiasi dispositivo di riproduzione attivo come Uscita, senza assumere
-   che siano lo stesso apparecchio (cuffie USB, casse + microfono della webcam, ecc.).
-8. **File di lavoro WAV durante la registrazione**, convertito in MP3 allo Stop.
-   Motivo: resistenza ai crash. Se l'app o il PC si piantano, il WAV fino a quel punto
-   resta recuperabile. Il prezzo è lo spazio temporaneo (~10 MB/min).
-9. **UI scritta in codice, senza designer visuale WinForms.** La finestra è minuscola
-   (due tendine, due indicatori, un pulsante, qualche etichetta): il layout in codice
-   (es. `TableLayoutPanel`) è più leggibile, facile da modificare anche per un agente e
-   non dipende dal designer. IDE di riferimento: **JetBrains Rider**, il cui designer
-   WinForms sui progetti .NET moderni è meno affidabile di quello di Visual Studio.
-   Build, test e publish passano tutti dalla CLI `dotnet`. Visual Studio è installato e
-   resta disponibile se servisse (vedi §12 per il packaging MSIX).
+4. **Recording file: a single MP3**, 48 kHz stereo, 128 kbps (~1 MB/min, ~60 MB/hour).
+5. **The two voices mixed together** in the same audio (not separate channels, not separate files).
+6. **MP3 encoding via Windows Media Foundation** (the system MP3 encoder, exposed
+   by NAudio), so no extra native dependency such as LAME.
+7. **Input and Output free and independent.** Any active capture device as the Input and
+   any active playback device as the Output, without assuming they are the same piece of
+   hardware (USB headset, speakers + webcam microphone, etc.).
+8. **WAV Working file during the Recording**, converted to MP3 on Stop.
+   Reason: crash resilience. If the app or the PC crashes, the WAV up to that point
+   remains recoverable. The price is temporary disk space (~10 MB/min).
+9. **UI written in code, without the WinForms visual designer.** The window is tiny
+   (two dropdowns, two meters, one button, a few labels): a layout in code
+   (e.g. `TableLayoutPanel`) is more readable, easier to change, also for an agent, and
+   doesn't depend on the designer. Reference IDE: **JetBrains Rider**, whose WinForms
+   designer on modern .NET projects is less reliable than Visual Studio's.
+   Build, test and publish all go through the `dotnet` CLI. Visual Studio is installed and
+   remains available if needed (see §12 for MSIX packaging).
 
-## 4. Come funziona (pipeline)
+## 4. How it works (pipeline)
 
 ```
- Ingresso ──(cattura WASAPI)───► buffer ─► converti formato ─┐
-                                                             ├─► MIX ─► file WAV di lavoro
- Uscita ────(cattura loopback)─► buffer ─► converti formato ─┘              │
-                                                                            ▼ (allo Stop)
-                                                                   conversione → MP3
+ Input ──(WASAPI capture)────► buffer ─► convert format ─┐
+                                                         ├─► MIX ─► Working file (WAV)
+ Output ─(loopback capture)──► buffer ─► convert format ─┘                 │
+                                                                           ▼ (on Stop)
+                                                                   conversion → MP3
 ```
 
-1. **Due catture in parallelo:** Ingresso scelto (cattura WASAPI) e Uscita scelta
-   (cattura loopback).
-2. **Normalizzazione del formato:** le due fonti arrivano quasi sempre in formati diversi
-   (es. Ingresso mono 16 kHz, Uscita stereo 48 kHz, a volte 5.1/7.1 o array di mic a 4 canali).
-   Entrambe vengono portate a 48 kHz stereo float (resampling + downmix/upmix dei canali).
-3. **Mix:** somma delle due fonti, con clipping controllato nel passaggio a 16 bit.
-4. **Scrittura:** un "motore" a ritmo di orologio preleva dal mix a tempo reale e scrive
-   il WAV di lavoro. L'header del WAV viene aggiornato periodicamente (flush), così il file
-   resta valido anche dopo un crash.
-5. **Finalizzazione:** allo Stop il WAV viene convertito in MP3 in background (una call di
-   un'ora può richiedere qualche secondo), poi il WAV viene cancellato. Se la conversione
-   fallisce, il WAV resta.
-6. **Indicatori di livello:** picco per ogni fonte, aggiornati ~10 volte al secondo.
+1. **Two captures in parallel:** the chosen Input (WASAPI capture) and the chosen Output
+   (Loopback capture).
+2. **Format conversion:** the two Sources almost always arrive in different formats
+   (e.g. Input mono 16 kHz, Output stereo 48 kHz, sometimes 5.1/7.1 or 4-channel mic arrays).
+   Both are brought to 48 kHz stereo float (resampling + channel downmix/upmix).
+3. **Mix:** sum of the two Sources, with controlled clipping when going to 16 bit.
+4. **Writing:** a clock-paced "engine" pulls from the Mix in real time and writes
+   the Working file. The WAV header is updated periodically (flush), so the file
+   stays valid even after a crash.
+5. **Finalization:** on Stop the WAV is converted to MP3 in the background (a one-hour call
+   may take a few seconds), then the WAV is deleted. If the conversion fails, the WAV
+   is kept.
+6. **Level meters:** peak for each Source, updated ~10 times per second.
 
-## 5. Insidie tecniche note
+## 5. Known technical pitfalls
 
-- **Il loopback tace nel silenzio.** Quando nessun suono esce dal dispositivo di uscita,
-  Windows non consegna pacchetti di silenzio: *non consegna niente*. Se il ritmo della
-  registrazione fosse guidato dai dati in arrivo, le due fonti si sfaserebbero. Serve un
-  orologio interno che guidi la scrittura e riempia di silenzio i buchi, con una piccola
-  latenza di sicurezza (~200–300 ms) per assorbire il jitter.
-- **Deriva degli orologi.** Ingresso e Uscita hanno clock hardware diversi (a maggior ragione
-  se sono apparecchi diversi): in un'ora possono
-  divergere di frazioni di secondo. I buffer devono tollerare lievi underrun (→ silenzio)
-  e overflow (→ scarto), senza crescere all'infinito.
-- **Cuffie Bluetooth e profilo "Hands-Free".** Su alcune configurazioni, quando il mic
-  delle cuffie BT si attiva, l'audio passa a un endpoint diverso ("Headset / Hands-Free")
-  rispetto a quello stereo. Se registro l'endpoint sbagliato, catturo silenzio. Windows 11
-  tende a unificarli, ma va verificato con le cuffie reali. Da qui l'idea di un'opzione
-  "Dispositivo di comunicazione predefinito" (vedi domande aperte).
-- **Eco con le casse.** Se l'Uscita sono le casse, l'Ingresso (microfono) capta anche la voce
-  degli altri che esce dagli altoparlanti: nel Mix quelle voci compaiono **due volte**, una dal
-  loopback e una dal microfono con qualche decina di ms di ritardo, con effetto eco. L'app di
-  call cancella l'eco solo sul *proprio* flusso, non su quello che catturiamo noi. Possibili
-  risposte: accettarlo (resta comprensibile), usare la modalità "comunicazioni" di Windows
-  per ottenere la cancellazione d'eco di sistema dove il driver la offre, oppure una
-  cancellazione d'eco nostra (es. WebRTC AEC o SpeexDSP): **il loopback è esattamente il
-  segnale di riferimento** che serve all'algoritmo. Vedi domande aperte.
-- **L'app di call può usare un'uscita diversa da quella predefinita.** L'utente deve
-  scegliere l'uscita che usa davvero Teams/Zoom.
-- **Dispositivo scollegato durante la registrazione** (jack staccato, BT che cade): la
-  cattura si interrompe con errore → l'app deve fermarsi in modo pulito, salvare ciò che
-  ha e avvisare.
-- **Formati "extensible".** Il formato di mix dei dispositivi è spesso dichiarato come
-  *WaveFormatExtensible* (float 32 bit) e va riconosciuto e trattato correttamente.
-- **Encoder MP3 di Windows:** accetta PCM 16 bit a 44,1/48 kHz, per cui il WAV di lavoro
-  va scritto in quel formato.
-- **Icona "microfono in uso".** Se si tenessero i livelli sempre attivi (anche senza
-  registrare), Windows mostrerebbe di continuo l'indicatore del microfono. Decisione
-  attuale: livelli attivi **solo durante la registrazione**.
+- **Loopback goes quiet during silence.** When no sound is coming out of the Output device,
+  Windows doesn't deliver silence packets: *it delivers nothing*. If the Recording's pace
+  were driven by incoming data, the two Sources would drift out of sync. We need an
+  internal clock that drives the writing and fills the gaps with silence, with a small
+  safety latency (~200–300 ms) to absorb jitter.
+- **Clock drift.** Input and Output have different hardware clocks (all the more so
+  if they are different devices): over an hour they can
+  diverge by fractions of a second. The buffers must tolerate slight underruns (→ silence)
+  and overflows (→ discard), without growing forever.
+- **Bluetooth headsets and the "Hands-Free" profile.** On some setups, when the BT headset's
+  mic activates, audio switches to a different endpoint ("Headset / Hands-Free")
+  from the stereo one. If I record the wrong endpoint, I capture silence. Windows 11
+  tends to unify them, but this must be checked with the real headset. Hence the idea of a
+  "Default communication device" option (see open questions).
+- **Echo with speakers.** If the Output is the speakers, the Input (microphone) also picks up
+  the other people's voices coming out of the speakers: in the Mix those voices appear **twice**,
+  once from the loopback and once from the microphone a few tens of ms later, producing an
+  echo. The call app cancels echo only on *its own* stream, not on the one we capture.
+  Possible answers: accept it (it stays understandable), use Windows' "communications" mode
+  to get system echo cancellation where the driver offers it, or our own echo cancellation
+  (e.g. WebRTC AEC or SpeexDSP): **the loopback is exactly the reference signal** the
+  algorithm needs. See open questions.
+- **The call app may use an output other than the default one.** The user must
+  choose the Output that Teams/Zoom actually uses.
+- **Device unplugged during a Recording** (jack pulled out, BT dropping): the
+  capture stops with an error → the app must stop cleanly, save what it has and
+  warn the user.
+- **"Extensible" formats.** Devices' mix format is often declared as
+  *WaveFormatExtensible* (32-bit float) and must be recognised and handled correctly.
+- **Windows MP3 encoder:** it accepts 16-bit PCM at 44.1/48 kHz, so the Working file
+  must be written in that format.
+- **"Microphone in use" icon.** If the meters were always active (even when not
+  recording), Windows would continuously show the microphone indicator. Current
+  decision: meters active **only while recording**.
 
-## 6. Glossario proposto (seme per `GLOSSARY.md`)
+## 6. Proposed glossary (seed for `GLOSSARY.md`)
 
-- **Registrazione**: una sessione tra "Registra" e "Stop", che produce un file audio.
-- **Ingresso**: il dispositivo di acquisizione scelto; di solito un microfono, ma può essere
-  qualsiasi sorgente (line-in, cavo virtuale…). _Evitare_: input, microfono, sorgente mic.
-- **Uscita**: il dispositivo di riproduzione scelto, di cui si cattura ciò che suona
-  (cuffie, casse, HDMI…). _Evitare_: output, cuffie, speaker, sistema.
-- **Cattura loopback**: la cattura di ciò che viene riprodotto su un'Uscita.
-- **Mix**: l'unione di Ingresso e Uscita in un solo flusso audio.
-- **File di lavoro**: il WAV scritto durante la Registrazione. _Evitare_: temp, buffer.
-- **Finalizzazione**: la conversione del File di lavoro nel file MP3 definitivo.
+- **Recording**: a session between "Record" and "Stop", producing a Recording file.
+- **Input**: the chosen capture device; usually a microphone, but it can be any audio
+  source (line-in, virtual cable…). _Avoid_: mic, microphone, mic source.
+- **Output**: the chosen playback device whose sound is captured
+  (headphones, speakers, HDMI…). _Avoid_: headphones, speakers, system audio.
+- **Loopback capture**: capturing what is being played on an Output.
+- **Mix**: the combination of Input and Output into a single audio stream.
+- **Working file**: the WAV written during the Recording. _Avoid_: temp, buffer.
+- **Finalization**: converting the Working file into the final MP3 Recording file.
 
-## 7. Domande aperte (da affrontare con `/grill-with-docs`)
+## 7. Open questions (to tackle with `/grill-with-docs`)
 
-1. **Volumi relativi:** spesso la propria voce risulta molto più forte o più debole degli
-   altri. Due cursori di guadagno (Ingresso / Uscita) sì o no? Eventuale normalizzazione
-   automatica?
-2. **Dispositivi all'avvio:** preselezionare i predefiniti di Windows o ricordare l'ultima
-   scelta (file di impostazioni in `%AppData%`)? Aggiungere nelle tendine una voce
-   "Predefinito comunicazioni" che segue Windows?
-3. **Cartella e nome file:** proposta `Documenti\Registrazioni\Call_AAAA-MM-GG_HH-mm.mp3`,
-   con cartella modificabile e pulsante "Apri cartella". Vogliamo poter dare un nome alla
-   registrazione (es. "call cliente X") prima o dopo?
-4. **Chiusura durante la registrazione:** conferma + salvataggio? Cosa succede con la
-   Finalizzazione in corso?
-5. **Recupero dopo crash:** all'avvio l'app cerca File di lavoro orfani e propone di
-   finalizzarli?
-6. **Pausa/ripresa:** serve?
-7. **Distribuzione:** eseguibile single-file *framework-dependent* (piccolo, richiede il
-   .NET 10 Desktop Runtime) oppure *self-contained* (nessun prerequisito, ~70+ MB)?
-   E puntiamo al Microsoft Store già dalla v1 o in un secondo momento? (vedi §12)
-8. **Lingua UI:** solo italiano o anche inglese?
-9. **Eco con le casse** (vedi §5): nella v1 lo accettiamo, avvisiamo l'utente ("con le casse
-   si può sentire un'eco: meglio le cuffie"), proviamo la cancellazione d'eco di sistema o
-   ne implementiamo una nostra usando il loopback come riferimento?
+1. **Relative volumes:** your own voice often ends up much louder or quieter than the
+   others. Two gain sliders (Input / Output), yes or no? Automatic level matching,
+   perhaps?
+2. **Devices at startup:** preselect the Windows defaults or remember the last choice
+   (settings file in `%AppData%`)? Add a "Default communications" entry to the dropdowns
+   that follows Windows?
+3. **Folder and file name:** proposal `Documents\Recordings\Call_AAAA-MM-GG_HH-mm.mp3`,
+   with a changeable folder and an "Open folder" button. Do we want to be able to name the
+   Recording (e.g. "call with client X") before or after?
+4. **Closing during a Recording:** confirm + save? What happens to a Finalization
+   in progress?
+5. **Crash recovery:** at startup, does the app look for orphan Working files and offer to
+   finalize them?
+6. **Pause/resume:** needed?
+7. **Distribution:** single-file *framework-dependent* executable (small, requires the
+   .NET 10 Desktop Runtime) or *self-contained* (no prerequisites, ~70+ MB)?
+   And do we target the Microsoft Store from v1 or later on? (see §12)
+8. **UI language:** Italian only, or English too?
+9. **Echo with speakers** (see §5): in v1 do we accept it, warn the user ("with speakers
+   you may hear an echo: headphones are better"), try system echo cancellation, or
+   implement our own using the loopback as the reference?
 
-## 8. Fuori perimetro (v1)
+## 8. Out of scope (v1)
 
-- Icona nella tray e scorciatoie globali da tastiera.
-- Avvio automatico quando parte Teams/Zoom.
-- Trascrizione, riassunti, AI.
-- Cattura per singola applicazione (per processo).
-- Canali o file separati per le due voci (possibile evoluzione futura: è un cambiamento
-  piccolo nella fase di mix).
-- Registrazione video/schermo.
-- Supporto a sistemi diversi da Windows 10/11.
+- Tray icon and global keyboard shortcuts.
+- Automatic start when Teams/Zoom launches.
+- Transcription, summaries, AI.
+- Per-application (per-process) capture.
+- Separate channels or files for the two voices (a possible future evolution: it's a
+  small change in the mix stage).
+- Video/screen recording.
+- Support for systems other than Windows 10/11.
 
-## 9. Test e verifica
+## 9. Testing and verification
 
-**Seam di test proposto:** separare nettamente il livello "dispositivi" (enumerazione e
-catture WASAPI, sottile e non testabile in automatico) dal **motore di registrazione**
-(normalizzazione formati, mix, orologio, scrittura). Il motore riceve due flussi audio
-astratti e un orologio iniettabile, così si può testare con segnali sintetici:
+**Proposed test seam:** cleanly separate the "devices" layer (enumeration and
+WASAPI captures, thin and not automatically testable) from the **recording engine**
+(format conversion, mix, clock, writing). The engine receives two abstract audio
+streams and an injectable clock, so it can be tested with synthetic signals:
 
-- formati diversi (mono/stereo/multicanale, 16/44,1/48 kHz, PCM/float) → output coerente
-  a 48 kHz stereo;
-- una fonte che tace (nessun dato) → silenzio nel file, durata corretta, niente sfasamento;
-- deriva simulata tra le fonti su durate lunghe → nessuna crescita illimitata dei buffer;
-- somma oltre fondo scala → clipping, niente wrap-around;
-- file di lavoro valido anche se il processo si interrompe dopo un flush.
+- different formats (mono/stereo/multichannel, 16/44.1/48 kHz, PCM/float) → consistent
+  48 kHz stereo result;
+- a Source that goes quiet (no data) → silence in the file, correct duration, no drift;
+- simulated drift between the Sources over long durations → no unbounded buffer growth;
+- a sum beyond full scale → clipping, no wrap-around;
+- Working file still valid if the process is interrupted after a flush.
 
-**Verifica manuale** (checklist con hardware reale):
+**Manual verification** (checklist with real hardware):
 
-- call reale con cuffie cablate e con cuffie Bluetooth (verifica dell'endpoint Hands-Free);
-- call reale con le **casse** del PC e un microfono separato (entità dell'eco);
-- Ingresso e Uscita su apparecchi diversi (es. mic della webcam + cuffie USB);
-- call lunga (≥ 1 ora): sincronia delle voci alla fine, dimensione del file, tempo di Finalizzazione;
-- cuffie staccate a metà registrazione;
-- chiusura dell'app durante la registrazione.
+- real call with wired headphones and with Bluetooth headphones (check the Hands-Free endpoint);
+- real call with the PC **speakers** and a separate microphone (how bad the echo is);
+- Input and Output on different devices (e.g. webcam mic + USB headphones);
+- long call (≥ 1 hour): voice sync at the end, file size, Finalization time;
+- headphones unplugged mid-Recording;
+- closing the app during a Recording.
 
-## 10. Come procedere
+## 10. How to proceed
 
-0. **Riservare il nome "Duettino" sul Microsoft Store** (Partner Center, gratuito, vedi §12)
-   prima che lo prenda qualcun altro.
-1. ~~**Creare il repo**~~ fatto: `fakkio/duettino`, con skill, `AGENTS.md` e
-   `docs/agents/` già configurati (issue tracker GitHub, etichette di triage,
+0. **Reserve the name "Duettino" on the Microsoft Store** (Partner Center, free, see §12)
+   before someone else takes it.
+1. ~~**Create the repo**~~ done: `fakkio/duettino`, with skills, `AGENTS.md` and
+   `docs/agents/` already configured (GitHub issue tracker, triage labels,
    `GLOSSARY.md` + `docs/adr/`).
-2. **`/grill-with-docs`** su questo brief: chiudere le domande aperte (§7), produrre
-   `GLOSSARY.md` dal glossario (§6) e le ADR dalle decisioni (§3).
-3. **`/prototype`** (spike usa-e-getta, consigliato): console app che registra 30 secondi
-   di Ingresso + loopback dell'Uscita in WAV. Serve a verificare subito sui dispositivi reali
-   le insidie più rischiose: silenzio del loopback, endpoint Bluetooth ed eco con le casse.
-4. **`/to-spec`**: spec della v1 pubblicata come issue.
-5. **`/to-tickets`**: spezzarla in ticket verticali. Ordine suggerito:
-   1. scheletro WinForms + elenco dispositivi;
-   2. motore di registrazione (normalizzazione + mix + orologio) con i test;
-   3. registrazione su WAV end-to-end;
-   4. Finalizzazione in MP3;
-   5. indicatori di livello e timer;
-   6. gestione errori (dispositivo scollegato, chiusura, recupero);
-   7. impostazioni persistenti e packaging.
-6. **`/implement`** / **`/tdd`** ticket per ticket.
-7. **Rilascio pubblico** (vedi §11): prima release con binario scaricabile su GitHub,
-   poi winget, poi la promozione.
+2. **`/grill-with-docs`** on this brief: close the open questions (§7), produce
+   `GLOSSARY.md` from the glossary (§6) and the ADRs from the decisions (§3).
+3. **`/prototype`** (throwaway spike, recommended): a console app that records 30 seconds
+   of Input + Output loopback to WAV. It serves to check right away, on real devices,
+   the riskiest pitfalls: loopback silence, Bluetooth endpoints and echo with speakers.
+4. **`/to-spec`**: v1 spec published as an issue.
+5. **`/to-tickets`**: split it into vertical tickets. Suggested order:
+   1. WinForms skeleton + device list;
+   2. recording engine (format conversion + mix + clock) with tests;
+   3. end-to-end recording to WAV;
+   4. Finalization to MP3;
+   5. level meters and timer;
+   6. error handling (unplugged device, closing, recovery);
+   7. persistent settings and packaging.
+6. **`/implement`** / **`/tdd`** ticket by ticket.
+7. **Public release** (see §11): first release with a downloadable binary on GitHub,
+   then winget, then promotion.
 
-## 11. Dove farlo conoscere
+## 11. Where to make it known
 
-Il pubblico è chi ha il nostro stesso problema e non trova risposte. La regola è
-**rispondere a chi cerca, non fare spam**: dichiarare sempre che l'app è nostra e dare
-prima la spiegazione, poi il link.
+The audience is people with the same problem as ours who can't find answers. The rule is
+**answer people who are searching, don't spam**: always disclose that the app is ours and
+give the explanation first, then the link.
 
-**Prerequisiti prima di promuovere:**
-- una release su GitHub con l'`.exe` pronto da scaricare (niente "compila da solo":
-  è proprio il difetto di AudioCapture);
-- un README con una **spiegazione chiara e dettagliata** (cosa fa in una frase: "registra
-  quello che dici e quello che senti"; poi come funziona, per chi è, gli usi possibili oltre
-  alle call), una GIF di 10 secondi, "Download" ben visibile e una sezione FAQ
-  ("perché non Stereo Mix?", "funziona con le cuffie Bluetooth?", "e con le casse?");
-- per l'angolo SEO, le frasi che la gente cerca davvero nel README: *record Teams call
+**Prerequisites before promoting:**
+- a GitHub release with a ready-to-download `.exe` (no "build it yourself":
+  that is exactly AudioCapture's flaw);
+- a README with a **clear, detailed explanation** (what it does in one sentence: "records
+  what you say and what you hear"; then how it works, who it's for, possible uses beyond
+  calls), a 10-second GIF, a prominent "Download" and a FAQ section
+  ("why not Stereo Mix?", "does it work with Bluetooth headphones?", "and with speakers?");
+- for the SEO angle, the phrases people actually search for, in the README: *record Teams call
   with headphones*, *record mic and speakers at the same time*, *Audio Hijack for Windows*,
   *OBS alternative for audio only*.
 
-**Dove si fanno già queste domande (rispondere lì):**
-- SuperUser / Stack Exchange: domande su *record microphone and system audio simultaneously*;
-- Microsoft Q&A e Tech Community (thread su registrazione di Teams e Stereo Mix mancante);
-- Tom's Guide forum (es. [questo thread](https://forums.tomsguide.com/threads/recording-software-that-can-record-from-2-sound-outputs-plus-microphone-are-there-any.342760/post-1500656));
-- Quora (es. [questa domanda](https://www.quora.com/How-do-I-record-internal-and-external-audio-simultaneously-on-a-PC));
-- forum Adobe Audition sul tema "stereo mix + microfono";
-- Reddit: cercare thread esistenti in r/software, r/Windows11, r/techsupport, r/MicrosoftTeams, r/Zoom.
+**Where these questions are already being asked (answer there):**
+- SuperUser / Stack Exchange: questions about *record microphone and system audio simultaneously*;
+- Microsoft Q&A and Tech Community (threads on Teams recording and missing Stereo Mix);
+- Tom's Guide forum (e.g. [this thread](https://forums.tomsguide.com/threads/recording-software-that-can-record-from-2-sound-outputs-plus-microphone-are-there-any.342760/post-1500656));
+- Quora (e.g. [this question](https://www.quora.com/How-do-I-record-internal-and-external-audio-simultaneously-on-a-PC));
+- Adobe Audition forums on "stereo mix + microphone";
+- Reddit: look for existing threads in r/software, r/Windows11, r/techsupport, r/MicrosoftTeams, r/Zoom.
 
-**Siti di alternative:**
-- **AlternativeTo**: pubblicare Duettino come alternativa a OBS Studio, Audacity,
-  Xbox Game Bar e soprattutto **Audio Hijack**. Audio Hijack esiste solo per Mac e in molti
-  cercano l'equivalente Windows: è l'angolo più forte.
+**Alternatives sites:**
+- **AlternativeTo**: list Duettino as an alternative to OBS Studio, Audacity,
+  Xbox Game Bar and above all **Audio Hijack**. Audio Hijack is Mac-only and many people
+  look for the Windows equivalent: it's the strongest angle.
 
-**Microsoft Store** (vedi §12): la scheda dello Store è anche una vetrina ricercabile
+**Microsoft Store** (see §12): the Store listing is also a searchable showcase
 ("call recorder", "record Teams").
 
-**Installazione con un comando:**
-- **winget** (PR su `microsoft/winget-pkgs`): è il canale più importante, perché rende
-  `winget install duettino` possibile e dà credibilità;
-- **Scoop** (bucket `extras`) e **Chocolatey**.
+**One-command install:**
+- **winget** (PR to `microsoft/winget-pkgs`): the most important channel, because it makes
+  `winget install duettino` possible and gives credibility;
+- **Scoop** (`extras` bucket) and **Chocolatey**.
 
 **GitHub:**
-- topic: `call-recorder`, `audio-recorder`, `wasapi`, `wasapi-loopback`, `naudio`,
+- topics: `call-recorder`, `audio-recorder`, `wasapi`, `wasapi-loopback`, `naudio`,
   `teams`, `zoom`, `windows`, `dotnet`, `winforms`;
-- proporla nelle liste curate (awesome-windows, awesome-dotnet e liste di software audio open source).
+- submit it to curated lists (awesome-windows, awesome-dotnet and open-source audio software lists).
 
-**Community (post di lancio, una volta sola per posto):**
-- Reddit: r/software, r/opensource, r/Windows11, r/podcasting, r/csharp e r/dotnet
-  (qui l'angolo tecnico), r/ItalyInformatica;
+**Communities (launch post, once per place):**
+- Reddit: r/software, r/opensource, r/Windows11, r/podcasting, r/csharp and r/dotnet
+  (the technical angle here), r/ItalyInformatica;
 - Hacker News "Show HN";
 - Product Hunt.
 
-**Siti di freeware** (inserimento gratuito, portano traffico da Google):
+**Freeware sites** (free listing, they bring traffic from Google):
 - Softpedia, MajorGeeks, Neowin (software news), FileHorse.
 
-**Contenuti tecnici** (portano visite nel tempo):
-- articolo su dev.to / Medium / Hashnode: *"Windows WASAPI loopback goes silent when nothing
-  plays, and how to mix it with the mic without drift"*. È il problema tecnico non ovvio
-  del progetto e porta visite naturali da sviluppatori;
-- eventuale risposta su Stack Overflow alle domande su NAudio loopback + mixing, con
-  link al codice.
+**Technical content** (brings visits over time):
+- an article on dev.to / Medium / Hashnode: *"Windows WASAPI loopback goes silent when nothing
+  plays, and how to mix it with the mic without drift"*. It's the project's non-obvious
+  technical problem and brings organic visits from developers;
+- possibly an answer on Stack Overflow to questions about NAudio loopback + mixing, with
+  a link to the code.
 
-## 12. Pubblicazione sul Microsoft Store
+## 12. Publishing on the Microsoft Store
 
-**Sì, è pubblicabile.** Lo Store accetta app desktop Win32/.NET come Duettino in due modi:
+**Yes, it can be published.** The Store accepts Win32/.NET desktop apps like Duettino in two ways:
 
-| | **Pacchetto MSIX** (consigliato) | **Installer EXE/MSI** |
+| | **MSIX package** (recommended) | **EXE/MSI installer** |
 |---|---|---|
-| Firma del codice | **La fa lo Store gratis** | Serve un certificato di firma del codice a pagamento (centinaia di €/anno) |
-| Dove sta il file | Caricato sullo Store | Ospitato da noi (URL HTTPS con versione) |
-| Aggiornamenti | Automatici via Store | Gestiti da noi |
-| Installazione/disinstallazione | Pulita, isolata | Dipende dall'installer |
+| Code signing | **The Store does it for free** | Requires a paid code-signing certificate (hundreds of €/year) |
+| Where the file lives | Uploaded to the Store | Hosted by us (versioned HTTPS URL) |
+| Updates | Automatic via the Store | Managed by us |
+| Install/uninstall | Clean, isolated | Depends on the installer |
 
-**Scelta: MSIX.** Evita il costo del certificato ed elimina anche l'avviso SmartScreen
-("app non riconosciuta") che invece colpisce l'`.exe` non firmato scaricato da GitHub.
+**Choice: MSIX.** It avoids the certificate cost and also removes the SmartScreen warning
+("unrecognized app") that instead hits the unsigned `.exe` downloaded from GitHub.
 
-**Cosa comporta:**
-- **Account sviluppatore:** gratuito per i privati (da settembre 2024 Microsoft ha tolto
-  la quota di iscrizione per gli sviluppatori individuali). Da verificare al momento
-  dell'iscrizione.
-- **Riservare il nome** "Duettino" subito in Partner Center: la prenotazione è gratuita.
-- **Pacchetto self-contained:** sullo Store non c'è un pacchetto del runtime .NET 10 Desktop
-  da cui dipendere, quindi il pacchetto deve includerlo (~70+ MB, accettabile).
-- **Capability `microphone`** dichiarata nel manifest. Da app impacchettata, Duettino
-  compare in *Impostazioni → Privacy → Microfono* con un proprio interruttore: l'app deve
-  gestire bene il caso "accesso al microfono negato" con un messaggio chiaro. La cattura
-  loopback dell'Uscita non richiede capability.
-- **Full trust** (`runFullTrust`): normale per le app desktop impacchettate; WASAPI e
-  loopback funzionano senza cambiamenti.
-- **Informativa sulla privacy** obbligatoria (l'app usa il microfono): basta una pagina
-  semplice (es. GitHub Pages o un file nel repo) che dica che tutto resta in locale,
-  niente rete, niente telemetria.
-- **Questionario di classificazione per età**, screenshot e descrizione per la scheda.
+**What it involves:**
+- **Developer account:** free for individuals (since September 2024 Microsoft has dropped
+  the registration fee for individual developers). To be verified at sign-up time.
+- **Reserve the name** "Duettino" right away in Partner Center: the reservation is free.
+- **Self-contained package:** the Store has no .NET 10 Desktop runtime package
+  to depend on, so the package must include it (~70+ MB, acceptable).
+- **`microphone` capability** declared in the manifest. As a packaged app, Duettino
+  appears in *Settings → Privacy → Microphone* with its own toggle: the app must
+  handle the "microphone access denied" case well, with a clear message. Loopback
+  capture of the Output doesn't require a capability.
+- **Full trust** (`runFullTrust`): normal for packaged desktop apps; WASAPI and
+  loopback work unchanged.
+- **Privacy policy** required (the app uses the microphone): a simple page is enough
+  (e.g. GitHub Pages or a file in the repo) stating that everything stays local,
+  no network, no telemetry.
+- **Age rating questionnaire**, screenshots and description for the listing.
 
-**Come produrre l'MSIX** (decisione da prendere, candidata ADR):
-- **Progetto di packaging di Visual Studio** (`.wapproj`): il più semplice e guidato, ma
-  è specifico di Visual Studio e non si compila con la sola CLI `dotnet`. È il caso in cui
-  Visual Studio torna utile.
-- **`makeappx` del Windows SDK + manifest scritto a mano**: si scrive una volta, è
-  scriptabile e gira anche in GitHub Actions. È l'opzione coerente con "tutto da CLI" e
-  con il flusso agentico.
-- Proposta: `makeappx` scriptato; Visual Studio solo come ripiego.
+**How to produce the MSIX** (decision to be taken, ADR candidate):
+- **Visual Studio packaging project** (`.wapproj`): the simplest and most guided, but
+  it's Visual Studio-specific and doesn't build with the `dotnet` CLI alone. This is the
+  case where Visual Studio comes in handy.
+- **Windows SDK `makeappx` + hand-written manifest**: written once, scriptable and
+  also runs in GitHub Actions. It's the option consistent with "everything from the CLI"
+  and with the agentic workflow.
+- Proposal: scripted `makeappx`; Visual Studio only as a fallback.
 
-**Doppio canale:**
-- **Store**: per gli utenti normali (MSIX, aggiornamenti automatici, niente avvisi di sicurezza);
-- **GitHub Releases + winget**: `.exe` portabile per chi non usa lo Store. winget può anche
-  installare direttamente dalla sorgente `msstore`.
+**Dual channel:**
+- **Store**: for regular users (MSIX, automatic updates, no security warnings);
+- **GitHub Releases + winget**: portable `.exe` for those who don't use the Store. winget can
+  also install directly from the `msstore` source.
 
-**Quando:** non necessariamente dalla v1. Proposta: v1 su GitHub Releases, Store dalla
-prima versione "stabile" dopo un po' di uso reale. Il nome però va riservato subito.
+**When:** not necessarily from v1. Proposal: v1 on GitHub Releases, Store from the
+first "stable" version after some real-world use. The name, however, must be reserved right away.
 
-## Nota legale
+## 13. Open questions resolved (`/grill-with-docs`, 2026-09-29)
 
-In Italia registrare una conversazione a cui si partecipa è in genere lecito per uso
-personale; diffonderla è un'altra questione. L'app non deve fare nulla in merito, ma
-è bene saperlo.
+The §7 questions, closed. Decisions that qualified became ADRs in `docs/adr/`; deferred
+features went to `docs/IDEAS.md`; vocabulary went to `GLOSSARY.md`.
+
+1. **Relative volumes:** the Working file keeps the two Sources unmixed (3 channels:
+   Input mono + Output stereo); Leveling and the Mix happen at Finalization (ADR-0004).
+   Leveling is automatic, measured only where a Source is actually active, with the
+   boost capped (e.g. +12 dB) so a silent Input's room noise isn't blown up. No sliders,
+   no on/off switch in v1.
+2. **Devices at startup:** remember the last Input and Output by device ID (settings in
+   `%AppData%`); on first run, or if a remembered device is gone, fall back to the Windows
+   default (multimedia) devices and show that the fallback happened. No "Default
+   communications" entry: Windows 11 unified the Bluetooth stereo and Hands-Free endpoints.
+3. **Folder and file name:** default folder `Documents\Duettino`, changeable, with an
+   "Open folder" button; file name `Duettino_YYYY-MM-DD_HH-mm-ss.mp3` (a `_2` suffix on
+   collision; no `Call_` prefix, calls aren't the only use). No naming of a Recording in v1.
+   The Working file sits in the same folder as `<name>.working.wav`.
+4. **Closing:** during a Recording, ask "Stop and save?", then stop, finalize and close.
+   During Finalization, keep the window open ("Saving…") and close when done; closing again
+   exits and leaves an Orphan Working file. On Windows shutdown/logoff, stop without asking,
+   finalize the WAV header and exit, leaving an Orphan Working file.
+5. **Crash recovery:** at startup, for each Orphan Working file, offer
+   "Recover / Delete / Later".
+6. **Pause/resume:** not in v1 (IDEAS).
+7. **Distribution:** self-contained single-file (compressed, ≈50 MB) on every channel;
+   v1 on GitHub Releases and winget, Store from the first stable release (ADR-0007).
+   Without the Windows MP3 encoder (N editions), Finalization writes a stereo WAV
+   (ADR-0003).
+8. **UI language:** English and Italian from v1, following the Windows display language,
+   English as fallback.
+9. **Echo with speakers:** accepted in v1, no in-app warning (Windows can't reliably tell
+   speakers from headphones); a README FAQ entry covers it. Offline echo cancellation at
+   Finalization is in IDEAS, pending the `/prototype` measurements.
+
+## Legal note
+
+In Italy, recording a conversation you take part in is generally lawful for personal use;
+distributing it is another matter. The app doesn't need to do anything about it, but
+it's good to know.
