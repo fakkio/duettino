@@ -77,10 +77,16 @@ void OnData(Source s, ReadOnlySpan<byte> b, AudioClientBufferFlags flags, long d
             else s.FirstPacketMs = now;
             s.LastPacketMs = now;
             s.Delivery.Add(now - (cap + frames * 1000.0 / f.SampleRate));
-            if (s.NextDevPos >= 0 && devPos != s.NextDevPos) { s.PosJumps++; s.PosJumpFrames += devPos - s.NextDevPos; }
-            // A timeline break: the device position did not advance in step with QPC (e.g. it froze during silence).
-            if (s.NextDevPos >= 0 && Math.Abs(devPos - (s.LastDevPos + (cap - s.LastCapMs) * f.SampleRate / 1000)) > 0.02 * f.SampleRate)
-            { s.TimelineBreaks++; s.EndDriftRun(); }
+            if (s.NextDevPos >= 0 && devPos != s.NextDevPos)
+            {
+                // Position jumped (e.g. no data while nothing played): log how far it disagrees with QPC, and restart the drift run
+                // so a one-off step is not read as a slope.
+                double stepMs = (devPos - s.LastDevPos) * 1000.0 / f.SampleRate - (cap - s.LastCapMs);
+                Log.W($"** [{now / 1000,7:F1}s] {s.Name} device position jumped {(devPos - s.NextDevPos) * 1000.0 / f.SampleRate:F1} ms; position minus QPC step {stepMs:+0.0;-0.0} ms");
+                s.PosJumps++; s.PosJumpFrames += devPos - s.NextDevPos;
+                if (Math.Abs(stepMs) > 20) s.TimelineBreaks++;
+                s.EndDriftRun();
+            }
             s.LastDevPos = devPos; s.LastCapMs = cap; s.NextDevPos = devPos + frames;
             s.Run.Add(cap / 1000, devPos);
             if (pk > s.Peak) s.Peak = pk;
@@ -384,7 +390,7 @@ sealed class Source(string name, bool loopback, int channels, string deviceId)
             if (Eng.Stamp) line += $" pad {padEvents}/{Ms(padFrames)} ms drop {dropEvents}/{Ms(dropFrames)} ms";
             if (overflowFrames > 0) line += $" overflow {Ms(overflowFrames)} ms";
             if (PosJumps > 0 || Discontinuities > 0 || TimelineBreaks > 0) line += $" | pos jumps {PosJumps} ({PosJumpFrames * 1000.0 / NominalRate:F0} ms) disc {Discontinuities} breaks {TimelineBreaks}";
-            if (Run.Duration > 20) line += $" | drift {Run.Ppm(NominalRate):+0;-0} ppm ({Run.RawDiffMs(NominalRate):+0.0;-0.0} ms in {Run.Duration:F0} s)";
+            if (Run.Duration > 20) line += $" | drift {Fmt.Sg(Run.Ppm(NominalRate), "0")} ppm ({Fmt.Sg(Run.RawDiffMs(NominalRate))} ms in {Run.Duration:F0} s)";
             WinPackets = 0; WinPeak = 0; WinSumSq = 0; WinN = 0;
             return line;
         }
@@ -411,7 +417,7 @@ sealed class Source(string name, bool loopback, int channels, string deviceId)
             Log.W($"  engine: underrun (silence filled by the clock) {Ms(underrunFrames)} ms, overflow dropped {Ms(overflowFrames)} ms" +
                   (Eng.Stamp ? $", gap pads {padEvents} ({Ms(padFrames)} ms), drift drops {dropEvents} ({Ms(dropFrames)} ms)" : "") + $", final offset {Ms(OffsetFrames)} ms");
             if (Best != null && Best.Duration > 1)
-                Log.W($"  drift of device position vs QPC clock (longest unbroken run, {Best.Duration:F1} s): {Best.Ppm(NominalRate):+0.0;-0.0} ppm, device minus clock {Best.RawDiffMs(NominalRate):+0.0;-0.0} ms");
+                Log.W($"  drift of device position vs QPC clock (longest unbroken run, {Best.Duration:F1} s): {Fmt.Sg(Best.Ppm(NominalRate))} ppm, device minus clock {Fmt.Sg(Best.RawDiffMs(NominalRate))} ms");
         }
     }
 }
@@ -475,6 +481,7 @@ static class Fmt
     }
 
     public static short S16(float v) => (short)Math.Round(Math.Clamp(v, -1f, 1f) * 32767f);
+    public static string Sg(double v, string f = "0.0") => (Math.Round(v, f.Length > 1 ? f.Length - 2 : 0) + 0.0) is var r && r >= 0 ? "+" + r.ToString(f) : r.ToString(f);
     public static double Db(double v) => v <= 1e-6 ? -120 : 20 * Math.Log10(v);
 }
 
