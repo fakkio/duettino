@@ -96,6 +96,13 @@ void OnData(Source s, ReadOnlySpan<byte> b, AudioClientBufferFlags flags, long d
                 if (Math.Abs(stepMs) > 20) s.TimelineBreaks++;
                 s.EndDriftRun();
             }
+            else if (s.NextDevPos >= 0 && Math.Abs(devPos - (s.LastDevPos + (cap - s.LastCapMs) * f.SampleRate / 1000)) > 0.02 * f.SampleRate)
+            {
+                // Timeline break: the position did not move in step with QPC (e.g. it froze while nothing played).
+                Log.W($"** [{now / 1000,7:F1}s] {s.Name} timeline break: position advanced {(devPos - s.LastDevPos) * 1000.0 / f.SampleRate:F1} ms while QPC advanced {cap - s.LastCapMs:F1} ms");
+                s.TimelineBreaks++;
+                s.EndDriftRun();
+            }
             s.LastDevPos = devPos; s.LastCapMs = cap; s.NextDevPos = devPos + frames;
             s.Run.Add(cap / 1000, devPos);
             if (pk > s.Peak) s.Peak = pk;
@@ -682,7 +689,7 @@ sealed class Options
     public string Label, Fill = "stamp", InputMode = "default";
     public string Analyze;
     public double WinS = 5;
-    public int LatencyMs = 250, TolMs = 40, GapMs = 50, BufferMs = 100;
+    public int LatencyMs = 250, TolMs = 10, GapMs = 50, BufferMs = 100;
 
     public static Options Parse(string[] a)
     {
