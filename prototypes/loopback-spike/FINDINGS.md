@@ -41,13 +41,24 @@ Machine: Windows 11 Pro 26200, .NET 10.0.12, NAudio 3.1.0. Run reports live in `
 - Loopback level unchanged across the switch, and a crude high-frequency ratio per second shows no narrowing during Hands-Free: the loopback is taken before the Bluetooth codec, so the Output side of the Recording stays full-band. The Input side through the headset mic will be narrowband (to check in test 5b).
 - ~2.9 s of Output were lost in total around the two switches (the engine itself was not rendering; the listener hears the dropout too).
 
+### Tests 8, 9 and part of 7: 12-minute run, Bluetooth Output + built-in array Input, music (run `long-bt`)
+- Clock-driven Working file exactly 720.01 s for 720.01 s of clock; no overflow, no drift correction needed.
+- Drift against QPC: Input +0.1 ppm over 504 s; Output 0 to +1 ppm over the first 215 s (later runs broken by events below). Input vs Output ≈ 1 ppm (~4 ms/hour). **Caveat:** the earbuds are rendered through the same Intel SST DSP as the built-in array, so this is not a truly independent clock; no USB device was available to test one.
+- Between two tracks (~227 s) the player stopped its stream: Output level fell, 35 all-zero packets, then **4.6 s without data**. Here the device position **froze** (did not advance) during the gap, unlike the Realtek test 1 where it advanced: position behaviour during silence differs per driver. QPC placement kept the Output at 0 ms offset.
+- At 216 s both Sources glitched at once (a system hiccup): Input lost 20 ms (two `DATA_DISCONTINUITY`, position +10 ms twice), Output 50 ms; delivery delays up to 42 ms. With the 40 ms tolerance then in use, the 20 ms Input loss was **not** padded, leaving the Input 20 ms early for the rest of the run. QPC placement is accurate to well under 1 ms, so the tolerance can be ~10 ms (now the default); on `DATA_DISCONTINUITY` the lost frames should be padded exactly.
+- Spike bug found here and fixed in `d846f23`: timeline breaks without a position jump were not detected, so the reported Output drift of this run (−1299 ppm) is an artefact of the 4.6 s freeze, not drift.
+- Working file 197.8 MB for 12 min (16.5 MB/min, matches ADR-0004); raw native Sources ~23 MB/min each.
+- **MP3 via Media Foundation (test 9):** 12 min of 16-bit stereo 48 kHz Mix encoded at 128 kbps in 2.83 s (0.24 s per minute of audio), 11.25 MB (0.94 MB/min). ADR-0003 holds.
+
 ## Numbers for the spec (so far)
 - First packet ~350–450 ms after `StartRecording` on both Sources.
 - Delivery delay (arrival minus capture QPC): Input median 1 ms (max 9); Loopback median 6 ms, p99 17 ms, max 17.6 ms. A 250 ms safety latency is ample.
 - Packet period 10 ms, `WasapiRecorder` buffer 100 ms, `LatencyMilliseconds` 100.
 - Drift between the built-in array and the Realtek Output: ~1 ppm (~4 ms/hour).
 - Mix without Leveling clips (loopback peaks reach 0 dBFS): the Mix needs headroom or a limiter.
-- MP3 via Media Foundation works on this machine (smoke run; timing on a long run pending).
+- MP3 encoding: 0.24 s per minute of audio (≈ 15 s for an hour).
+- Stamp tolerance: ~10 ms is enough (QPC placement error < 1 ms); lost frames flagged by `DATA_DISCONTINUITY` should be padded exactly.
+- System hiccups of 40–60 ms without data occur on both Sources at once; the 250 ms safety latency absorbs them.
 
 ## NAudio 3.1 surprises
 - `WasapiCapture` and `WasapiLoopbackCapture` are `[Obsolete]`; the replacement is `WasapiRecorderBuilder` → `WasapiRecorder` (loopback via `.WithLoopbackCapture()` on a render device).
@@ -57,4 +68,4 @@ Machine: Windows 11 Pro 26200, .NET 10.0.12, NAudio 3.1.0. Run reports live in `
 - First Input packets after start are all-zero (4 packets); the first packet of each stream carries `DATA_DISCONTINUITY`.
 
 ## Pending
-- Test 4 wired headphones in a real call; test 5b Bluetooth with the headset mic as Input in a real call; test 6b speakers in a real call; test 7 devices on different hardware; test 8 long run (≥ 10 min, drift); test 9 MP3 timing on a long run.
+- Test 4 wired headphones in a real call; test 5b Bluetooth with the headset mic as Input in a real call; test 6b speakers in a real call; test 7 with truly independent clocks (no USB device available).
