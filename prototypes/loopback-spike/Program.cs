@@ -32,13 +32,14 @@ Eng.LatencyMs = opt.LatencyMs;
 Eng.TolMs = opt.TolMs;
 Eng.GapMs = opt.GapMs;
 Eng.BufferMs = opt.BufferMs;
+Eng.InputMode = opt.InputMode;
 
 string dir = Path.Combine(Paths.ProjectDir(), "runs", $"{DateTime.Now:yyyyMMdd-HHmmss}-{label}");
 Directory.CreateDirectory(dir);
 Log.Open(Path.Combine(dir, "report.txt"));
 Log.W("");
 Log.W($"Run '{label}': {seconds} s, Input = {inDev.FriendlyName}, Output = {outDev.FriendlyName}");
-Log.W($"Engine: fill={(Eng.Stamp ? "stamp (each packet placed at its capture QPC timestamp)" : "naive (silence only on engine underrun)")}, latency {Eng.LatencyMs} ms, tolerance {Eng.TolMs} ms, gap threshold {Eng.GapMs} ms, capture buffer {Eng.BufferMs} ms");
+Log.W($"Engine: fill={(Eng.Stamp ? "stamp (each packet placed at its capture QPC timestamp)" : "naive (silence only on engine underrun)")}, latency {Eng.LatencyMs} ms, tolerance {Eng.TolMs} ms, gap threshold {Eng.GapMs} ms, capture buffer {Eng.BufferMs} ms, Input stream mode {Eng.InputMode}");
 Log.W($"Input volume {inDev.AudioEndpointVolume.MasterVolumeLevelScalar:P0}, Output volume {outDev.AudioEndpointVolume.MasterVolumeLevelScalar:P0} mute {outDev.AudioEndpointVolume.Mute}");
 Log.W($"Folder: {dir}");
 
@@ -230,6 +231,7 @@ static class Eng
     public static volatile bool Stopping;
     public static double StopAtMs = double.MaxValue;
     public static int LatencyMs, TolMs, GapMs, BufferMs;
+    public static string InputMode = "default";
 }
 
 sealed class Source(string name, bool loopback, int channels, string deviceId)
@@ -277,6 +279,8 @@ sealed class Source(string name, bool loopback, int channels, string deviceId)
         var dev = en.GetDevice(DeviceId);
         var builder = new WasapiRecorderBuilder().WithDevice(dev).WithBufferLength(Eng.BufferMs);
         if (Loopback) builder = builder.WithLoopbackCapture();
+        else if (Eng.InputMode == "raw") builder = builder.WithRawMode();
+        else if (Eng.InputMode == "comms") builder = builder.WithCommunicationsMode();
         Capture = builder.Build();
         Capture.DataAvailable += (b, fl, dp, q) => onData(this, b, fl, dp, q);
         Capture.RecordingStopped += (_, e) => onStopped(this, e);
@@ -666,7 +670,7 @@ sealed class Options
     public bool ListOnly, NoEcho;
     public bool? Mp3;
     public int? In, Out, Seconds;
-    public string Label, Fill = "stamp";
+    public string Label, Fill = "stamp", InputMode = "default";
     public int LatencyMs = 250, TolMs = 40, GapMs = 50, BufferMs = 100;
 
     public static Options Parse(string[] a)
@@ -688,6 +692,8 @@ sealed class Options
                 case "--tol": o.TolMs = int.Parse(a[++i]); break;
                 case "--gap": o.GapMs = int.Parse(a[++i]); break;
                 case "--buffer": o.BufferMs = int.Parse(a[++i]); break;
+                case "--raw": o.InputMode = "raw"; break;
+                case "--comms": o.InputMode = "comms"; break;
                 default: throw new ArgumentException($"unknown option {a[i]}");
             }
         return o;

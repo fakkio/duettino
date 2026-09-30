@@ -8,7 +8,7 @@ dotnet run -- --list           # only list devices and their mix formats
 dotnet run -- --in 1 --out 1 --seconds 600 --label long --mp3
 ```
 
-Other options: `--fill naive|stamp` (default `stamp`), `--latency 250`, `--tol 40`, `--gap 50`, `--buffer 100` (ms), `--no-echo`, `--no-mp3`.
+Other options: `--fill naive|stamp` (default `stamp`), `--latency 250`, `--tol 40`, `--gap 50`, `--buffer 100` (ms), `--raw` (Input without system audio effects) or `--comms` (Input opened as a communications stream), `--no-echo`, `--no-mp3`.
 While recording: `M` marks an event in the log, `Q` stops early.
 
 Each run writes to `runs/<timestamp>-<label>/` (git-ignored): `working.wav` (Input mono + Output stereo, 16-bit 48 kHz), `input.raw.wav` and `output.raw.wav` (native mix format, one extra file per reopening), `mix.wav`, optional `mix.mp3`, and `report.txt` with everything printed on screen.
