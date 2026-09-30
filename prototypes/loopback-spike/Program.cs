@@ -12,6 +12,14 @@ using NAudio.Wave;
 
 CultureInfo.DefaultThreadCurrentCulture = CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 var opt = Options.Parse(args);
+if (opt.Analyze != null)
+{
+    Log.Open(Path.Combine(opt.Analyze, $"echo-{opt.WinS}s.txt"));
+    Log.W($"Offline echo analysis of {opt.Analyze}, {opt.WinS} s windows");
+    Post.Echo(Path.Combine(opt.Analyze, "working.wav"), opt.WinS);
+    Log.Close();
+    return;
+}
 var enumerator = new MMDeviceEnumerator();
 
 var inputs = enumerator.EnumerateAudioEndPoints(DataFlow.Capture, DeviceState.Active).ToList();
@@ -213,7 +221,7 @@ if (inp.Best is { } bi && outp.Best is { } bo)
 
 string mixPath = Path.Combine(dir, "mix.wav");
 Post.Mix(workingPath, mixPath);
-if (!opt.NoEcho) Post.Echo(workingPath);
+if (!opt.NoEcho) Post.Echo(workingPath, opt.WinS);
 if (mp3) Post.Mp3(mixPath, Path.Combine(dir, "mix.mp3"));
 Log.W("");
 Log.W($"Done. Files in {dir}");
@@ -563,9 +571,10 @@ static class Post
 
     // Echo of the Output inside the Input: normalized cross-correlation on 8 kHz decimated copies,
     // on the loudest 5 s windows of the Output. Positive delay = the Input hears the Output later.
-    public static void Echo(string working)
+    public static void Echo(string working, double winS)
     {
-        const int D = 6, R8 = Eng.Rate / D, Seg = 5 * R8, LagMin = -R8 / 5, LagMax = R8 / 2;
+        const int D = 6, R8 = Eng.Rate / D, LagMin = -R8 / 5, LagMax = R8 / 2;
+        int Seg = (int)(winS * R8);
         var inD = new List<float>(); var outD = new List<float>();
         using (var r = new WaveFileReader(working))
         {
@@ -591,10 +600,10 @@ static class Post
             if (Fmt.Db(rms) > -45) cands.Add((s0, rms));
         }
         Log.W("");
-        Log.W("Echo estimate (Output inside Input), loudest 5 s windows of the Output:");
+        Log.W($"Echo estimate (Output inside Input), loudest {winS} s windows of the Output:");
         if (cands.Count == 0) { Log.W("  no window with Output above -45 dBFS RMS: nothing to correlate"); return; }
         var found = new List<(double Ms, double Ncc, double GainDb)>();
-        foreach (var (s0, rms) in cands.OrderByDescending(c => c.Rms).Take(6).OrderBy(c => c.S0))
+        foreach (var (s0, rms) in cands.OrderByDescending(c => c.Rms).Take(Math.Max(6, (int)(30 / winS))).OrderBy(c => c.S0))
         {
             double ex = 0; for (int t = s0; t < s0 + Seg; t++) ex += x[t] * x[t];
             var ncc = new double[LagMax - LagMin + 1]; var gain = new double[ncc.Length];
@@ -671,6 +680,8 @@ sealed class Options
     public bool? Mp3;
     public int? In, Out, Seconds;
     public string Label, Fill = "stamp", InputMode = "default";
+    public string Analyze;
+    public double WinS = 5;
     public int LatencyMs = 250, TolMs = 40, GapMs = 50, BufferMs = 100;
 
     public static Options Parse(string[] a)
@@ -693,6 +704,8 @@ sealed class Options
                 case "--gap": o.GapMs = int.Parse(a[++i]); break;
                 case "--buffer": o.BufferMs = int.Parse(a[++i]); break;
                 case "--raw": o.InputMode = "raw"; break;
+                case "--analyze": o.Analyze = a[++i]; break;
+                case "--win": o.WinS = double.Parse(a[++i], CultureInfo.InvariantCulture); break;
                 case "--comms": o.InputMode = "comms"; break;
                 default: throw new ArgumentException($"unknown option {a[i]}");
             }
