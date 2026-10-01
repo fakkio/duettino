@@ -1,6 +1,6 @@
 # PROTOTYPE findings: loopback spike (interim, updated after each test)
 
-Machine: Windows 11 Pro 26200, .NET 10.0.12, NAudio 3.1.0. Run reports live in `runs/` (git-ignored, local only).
+Machine: Windows 11 Pro 26200 (tests on 2026-09-30) then 26300 after an overnight update (call tests on 2026-10-01), .NET 10.0.12, NAudio 3.1.0. Run reports live in `runs/` (git-ignored, local only).
 
 ## Devices tried
 
@@ -50,6 +50,12 @@ Machine: Windows 11 Pro 26200, .NET 10.0.12, NAudio 3.1.0. Run reports live in `
 - Working file 197.8 MB for 12 min (16.5 MB/min, matches ADR-0004); raw native Sources ~23 MB/min each.
 - **MP3 via Media Foundation (test 9):** 12 min of 16-bit stereo 48 kHz Mix encoded at 128 kbps in 2.83 s (0.24 s per minute of audio), 11.25 MB (0.94 MB/min). ADR-0003 holds.
 
+### Test 6b: real call, speakers + built-in array (run `call-speakers`, 300 s)
+- Clean run: Working file 300.02 s for 300.02 s of clock, no gaps, delivery max 24 ms, drift Input vs Output −0.1 ppm.
+- One 10 ms Input loss (`DATA_DISCONTINUITY`, position +10 ms) at 70 s was padded exactly by the 10 ms tolerance: final offset 0 ms (the 40 ms tolerance of the long run would have left it 10 ms off).
+- Echo: while the remote speaker talked (Output ≈ −17 dBFS), the Input stayed at −55…−58 dBFS; on 30 one-second windows no echo correlation above noise (one |NCC| 0.21 at a negative delay, i.e. double-talk, not echo). With the call running, echo of the speakers in the Input is suppressed by ≥ 40 dB on this laptop, as in test 6a after convergence.
+- The far end is gated by the call app: Output drops to −60…−74 dBFS whenever the remote side is silent (not true silence, no loopback gaps).
+
 ## Numbers for the spec (so far)
 - First packet ~350–450 ms after `StartRecording` on both Sources.
 - Delivery delay (arrival minus capture QPC): Input median 1 ms (max 9); Loopback median 6 ms, p99 17 ms, max 17.6 ms. A 250 ms safety latency is ample.
@@ -68,4 +74,4 @@ Machine: Windows 11 Pro 26200, .NET 10.0.12, NAudio 3.1.0. Run reports live in `
 - First Input packets after start are all-zero (4 packets); the first packet of each stream carries `DATA_DISCONTINUITY`.
 
 ## Pending
-- Test 4 wired headphones in a real call; test 5b Bluetooth with the headset mic as Input in a real call; test 6b speakers in a real call; test 7 with truly independent clocks (no USB device available).
+- Test 4 wired headphones in a real call; test 5b Bluetooth with the headset mic as Input in a real call; test 7 with truly independent clocks (no USB device available).
