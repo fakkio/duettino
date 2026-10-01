@@ -14,12 +14,13 @@ namespace Duettino.Engine;
 public sealed class Recording : IDisposable
 {
     internal const int Rate = 48000;
+    internal const string WorkingFileSuffix = ".working.wav";
     const long SafetyLatencyTicks = TimeSpan.TicksPerSecond / 4;
     const int ChunkFrames = Rate / 2;
 
     readonly IClock clock;
     readonly long startTicks;
-    readonly WorkingFileWriter writer;
+    readonly WavFileWriter writer;
     readonly SourceTimeline input = new(channels: 1);
     readonly SourceTimeline output = new(channels: 2);
     readonly float[] inputChunk = new float[ChunkFrames];
@@ -36,8 +37,8 @@ public sealed class Recording : IDisposable
         this.clock = clock;
         Directory.CreateDirectory(folder);
         var stem = "Duettino_" + clock.LocalNow.ToString("yyyy-MM-dd_HH-mm-ss", CultureInfo.InvariantCulture);
-        WorkingFilePath = Path.Combine(folder, stem + ".working.wav");
-        writer = new WorkingFileWriter(WorkingFilePath, Rate, channels: 3);
+        WorkingFilePath = Path.Combine(folder, stem + WorkingFileSuffix);
+        writer = new WavFileWriter(WorkingFilePath, Rate, channels: 3);
         startTicks = clock.Now;
     }
 

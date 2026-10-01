@@ -4,10 +4,10 @@ using System.Runtime.InteropServices;
 namespace Duettino.Engine;
 
 /// <summary>
-/// Writes the Working file: a 16-bit PCM WAV whose header is rewritten on every <see cref="Flush"/>,
-/// so the file stays readable if the process or the PC dies (ADR-0004).
+/// Writes a 16-bit PCM WAV whose header is rewritten on every <see cref="Flush"/>, so a Working file stays readable
+/// if the process or the PC dies (ADR-0004).
 /// </summary>
-sealed class WorkingFileWriter : IDisposable
+sealed class WavFileWriter : IDisposable
 {
     const int HeaderBytes = 44;
 
@@ -16,11 +16,17 @@ sealed class WorkingFileWriter : IDisposable
     readonly int sampleRate;
     long dataBytes;
 
-    public WorkingFileWriter(string path, int sampleRate, int channels)
+    public WavFileWriter(string path, int sampleRate, int channels)
+        : this(new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.Read), sampleRate, channels)
     {
+    }
+
+    /// <summary>Writes into <paramref name="stream"/>, a new, empty file it takes ownership of.</summary>
+    public WavFileWriter(FileStream stream, int sampleRate, int channels)
+    {
+        this.stream = stream;
         this.sampleRate = sampleRate;
         this.channels = channels;
-        stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
         WriteHeader();
     }
 

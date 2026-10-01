@@ -94,10 +94,12 @@ sealed class MainForm : Form
     {
         var stopping = recorder!;
         recordButton.Enabled = false;
+        recordButton.Text = Strings.RecordButton;
+        notice.Text = Strings.SavingNotice;
         try
         {
             await stopping.StopAsync();
-            notice.Text = string.Format(Strings.WorkingFileSaved, stopping.WorkingFilePath);
+            await FinalizeRecording(stopping.WorkingFilePath);
         }
         catch (Exception ex)
         {
@@ -106,7 +108,20 @@ sealed class MainForm : Form
         recorder = null;
         inputList.Enabled = inputList.Items[0] is AudioEndpoint;
         outputList.Enabled = outputList.Items[0] is AudioEndpoint;
-        recordButton.Text = Strings.RecordButton;
         recordButton.Enabled = true;
+    }
+
+    /// <summary>Turns the Working file into the Recording file off the UI thread, then says how it went.</summary>
+    async Task FinalizeRecording(string workingFilePath)
+    {
+        try
+        {
+            var result = await Task.Run(() => Finalization.Run(workingFilePath, new MediaFoundationMp3Encoder()));
+            notice.Text = string.Format(result.IsWav ? Strings.SavedAsWav : Strings.Saved, result.RecordingFilePath);
+        }
+        catch (Exception ex)
+        {
+            notice.Text = string.Format(Strings.CannotFinalize, ex.Message, workingFilePath);
+        }
     }
 }

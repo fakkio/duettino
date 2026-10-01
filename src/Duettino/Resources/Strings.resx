@@ -40,9 +40,21 @@
     <value>Recording…</value>
     <comment>Notice while a Recording runs.</comment>
   </data>
-  <data name="WorkingFileSaved" xml:space="preserve">
+  <data name="SavingNotice" xml:space="preserve">
+    <value>Saving…</value>
+    <comment>Notice while Finalization turns the Working file into the Recording file.</comment>
+  </data>
+  <data name="Saved" xml:space="preserve">
     <value>Saved {0}</value>
-    <comment>{0}: path of the Working file.</comment>
+    <comment>{0}: path of the Recording file.</comment>
+  </data>
+  <data name="SavedAsWav" xml:space="preserve">
+    <value>Saved {0} as WAV: this edition of Windows has no MP3 encoder. To save MP3 files, install the Media Feature Pack (Settings › Apps › Optional features › Add a feature).</value>
+    <comment>{0}: path of the Recording file, a WAV because the MP3 encoder is missing (Windows N editions).</comment>
+  </data>
+  <data name="CannotFinalize" xml:space="preserve">
+    <value>Couldn't save the Recording file: {0} The unmixed recording was kept in {1}</value>
+    <comment>{0}: the error message; {1}: path of the Working file.</comment>
   </data>
   <data name="CannotStart" xml:space="preserve">
     <value>Couldn't start recording: {0}</value>

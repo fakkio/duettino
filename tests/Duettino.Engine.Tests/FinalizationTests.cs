@@ -1,0 +1,116 @@
+using NAudio.Wave;
+
+namespace Duettino.Engine.Tests;
+
+public sealed class FinalizationTests : IDisposable
+{
+    const string Stem = "Duettino_2026-10-01_14-30-05";
+
+    readonly string folder = Path.Combine(Path.GetTempPath(), "duettino-tests", Guid.NewGuid().ToString("N"));
+
+    public FinalizationTests() => Directory.CreateDirectory(folder);
+
+    public void Dispose()
+    {
+        if (Directory.Exists(folder)) Directory.Delete(folder, recursive: true);
+    }
+
+    string WorkingFilePath => Path.Combine(folder, Stem + ".working.wav");
+
+    [Fact]
+    public void The_Mix_carries_the_Input_on_both_sides_added_to_the_Output_and_lands_in_an_MP3_named_after_the_Working_file()
+    {
+        WorkingFiles.Write(WorkingFilePath, 4800, _ => (1000, 2000, -3000));
+        var encoder = new CapturingEncoder();
+
+        var result = Finalization.Run(WorkingFilePath, encoder);
+
+        Assert.Equal(Path.Combine(folder, Stem + ".mp3"), result.RecordingFilePath);
+        Assert.False(result.IsWav);
+        Assert.Equal(CapturingEncoder.Mp3Bytes, File.ReadAllBytes(result.RecordingFilePath));
+        Assert.False(File.Exists(WorkingFilePath));
+        Assert.Equal(4800 * 2, encoder.Mix.Length);
+        Assert.All(Enumerable.Range(0, 4800), i => Assert.Equal((3000, -2000), (encoder.Mix[2 * i], encoder.Mix[2 * i + 1])));
+    }
+
+    [Fact]
+    public void The_Media_Foundation_encoder_produces_a_48_kHz_stereo_128_kbps_MP3_as_long_as_the_Recording()
+    {
+        WorkingFiles.Write(WorkingFilePath, 3 * 48000, i => (0, (short)(8000 * Math.Sin(2 * Math.PI * 440 * i / 48000)), 0));
+
+        var result = Finalization.Run(WorkingFilePath, new MediaFoundationMp3Encoder());
+
+        Assert.Equal(Path.Combine(folder, Stem + ".mp3"), result.RecordingFilePath);
+        Assert.False(File.Exists(WorkingFilePath));
+        using var mp3 = File.OpenRead(result.RecordingFilePath);
+        var frames = new List<Mp3Frame>();
+        while (Mp3Frame.LoadFromStream(mp3) is { } frame) frames.Add(frame);
+        Assert.NotEmpty(frames);
+        Assert.All(frames, f => Assert.Equal((48000, 128000), (f.SampleRate, f.BitRate)));
+        Assert.All(frames, f => Assert.NotEqual(ChannelMode.Mono, f.ChannelMode));
+        Assert.InRange(frames.Sum(f => f.SampleCount) / 48000.0, 3.0, 3.1); // the encoder adds a few ms of padding
+    }
+
+    [Fact]
+    public void Both_Sources_at_full_scale_mix_without_clipping_or_wrapping_around()
+    {
+        // A 440 Hz sine at full scale on both Sources, in phase: their plain sum would be twice full scale.
+        static short Sine(int frame) => (short)Math.Round(32767 * Math.Sin(2 * Math.PI * 440 * frame / 48000));
+        WorkingFiles.Write(WorkingFilePath, 2 * 48000, i => (Sine(i), Sine(i), Sine(i)));
+        var encoder = new CapturingEncoder();
+
+        Finalization.Run(WorkingFilePath, encoder);
+
+        var mix = encoder.Mix;
+        int peak = mix.Max(s => Math.Abs((int)s));
+        Assert.InRange(peak, 16384, 31128); // loud, yet at least 0.5 dB below full scale
+        Assert.True(mix.Count(s => Math.Abs((int)s) == peak) < mix.Length / 20, "the waveform is flattened at its peak");
+        Assert.All(Enumerable.Range(0, mix.Length / 2), i =>
+        {
+            int sign = Math.Sign(Sine(i));
+            if (Math.Abs((int)Sine(i)) > 1000) Assert.Equal((sign, sign), (Math.Sign(mix[2 * i]), Math.Sign(mix[2 * i + 1])));
+        });
+    }
+
+    [Fact]
+    public void A_taken_name_gets_the_first_free_numeric_suffix_and_nothing_is_overwritten()
+    {
+        WorkingFiles.Write(WorkingFilePath, 480, _ => (0, 0, 0));
+        File.WriteAllText(Path.Combine(folder, Stem + ".mp3"), "first");
+        File.WriteAllText(Path.Combine(folder, Stem + "_2.mp3"), "second");
+
+        var result = Finalization.Run(WorkingFilePath, new CapturingEncoder());
+
+        Assert.Equal(Path.Combine(folder, Stem + "_3.mp3"), result.RecordingFilePath);
+        Assert.Equal("first", File.ReadAllText(Path.Combine(folder, Stem + ".mp3")));
+        Assert.Equal("second", File.ReadAllText(Path.Combine(folder, Stem + "_2.mp3")));
+    }
+
+    [Fact]
+    public void Without_an_MP3_encoder_the_Recording_file_is_the_Mix_as_a_stereo_WAV()
+    {
+        WorkingFiles.Write(WorkingFilePath, 4800, _ => (1000, 2000, -3000));
+
+        var result = Finalization.Run(WorkingFilePath, new UnavailableEncoder());
+
+        Assert.Equal(Path.Combine(folder, Stem + ".wav"), result.RecordingFilePath);
+        Assert.True(result.IsWav);
+        Assert.Equal([result.RecordingFilePath], Directory.GetFiles(folder));
+        var wav = WavFile.Read(result.RecordingFilePath);
+        Assert.Equal((48000, 16, 2), (wav.Format.SampleRate, wav.Format.BitsPerSample, wav.Format.Channels));
+        Assert.Equal(4800 * 2, wav.Samples.Length);
+        Assert.All(Enumerable.Range(0, 4800), i => Assert.Equal((3000, -2000), (wav.Samples[2 * i], wav.Samples[2 * i + 1])));
+    }
+
+    [Fact]
+    public void A_failing_encoder_keeps_the_Working_file_and_leaves_no_partial_Recording_file()
+    {
+        WorkingFiles.Write(WorkingFilePath, 4800, i => ((short)i, 0, 0));
+        var before = File.ReadAllBytes(WorkingFilePath);
+
+        Assert.Throws<IOException>(() => Finalization.Run(WorkingFilePath, new FailingEncoder()));
+
+        Assert.Equal(before, File.ReadAllBytes(WorkingFilePath));
+        Assert.Equal([WorkingFilePath], Directory.GetFiles(folder));
+    }
+}
