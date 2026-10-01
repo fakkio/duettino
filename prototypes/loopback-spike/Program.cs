@@ -141,17 +141,31 @@ void OnStopped(Source s, StoppedEventArgs e)
     Log.W($"!! [{Eng.NowMs / 1000,7:F1}s] {s.Name} capture stopped: {(x == null ? "no exception" : $"{x.GetType().Name} 0x{x.HResult:X8} {x.Message}")}");
     Task.Run(() =>
     {
-        for (int i = 1; i <= 30 && !Eng.Stopping; i++)
+        // Keep trying until Stop: wait for the endpoint to be Active again, then reopen it.
+        string last = null;
+        for (int i = 1; !Eng.Stopping; i++)
         {
-            Thread.Sleep(500);
+            Thread.Sleep(1000);
             try
             {
+                var state = enumerator.GetDevice(s.DeviceId).State;
+                if (state != DeviceState.Active)
+                {
+                    if ($"{state}" != last) Log.W($"!! [{Eng.NowMs / 1000,7:F1}s] {s.Name} endpoint state {state}, waiting");
+                    last = $"{state}";
+                    continue;
+                }
                 s.Open(enumerator, dir, OnData, OnStopped);
                 s.Capture.StartRecording();
                 Log.W($"!! [{Eng.NowMs / 1000,7:F1}s] {s.Name} reopened (attempt {i}), format {Fmt.Describe(s.Format)}");
                 return;
             }
-            catch (Exception ex) { Log.W($"!! {s.Name} reopen attempt {i} failed: {ex.GetType().Name} 0x{ex.HResult:X8} {ex.Message}"); }
+            catch (Exception ex)
+            {
+                var msg = $"{ex.GetType().Name} 0x{ex.HResult:X8} {ex.Message}";
+                if (msg != last) Log.W($"!! [{Eng.NowMs / 1000,7:F1}s] {s.Name} reopen attempt {i} failed: {msg}");
+                last = msg;
+            }
         }
     });
 }
