@@ -60,7 +60,11 @@ public sealed class Recording : IDisposable
     public void Deliver(Source source, SourceFormat format, ReadOnlySpan<byte> data, long captureTime, PacketFlags flags = PacketFlags.None)
     {
         var timeline = source == Source.Input ? input : output;
-        timeline.Place(FormatConversion.Convert(format, data, flags, timeline.Channels), FrameAt(captureTime));
+        var samples = FormatConversion.Convert(format, data, flags, timeline.Channels);
+        // An empty packet carries no audio, and its timestamp can be garbage (NAudio hands one over, stamped 0, after
+        // every real packet): placing it would lose track of where the Source's audio ends.
+        if (samples.Length == 0) return;
+        timeline.Place(samples, FrameAt(captureTime));
     }
 
     /// <summary>Writes the Working file up to the safety latency behind the clock. Call it every few milliseconds.</summary>

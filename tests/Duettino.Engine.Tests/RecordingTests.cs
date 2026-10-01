@@ -156,6 +156,31 @@ public sealed class RecordingTests : IDisposable
     }
 
     [Fact]
+    public void Jittery_timestamps_and_empty_packets_with_bogus_timestamps_leave_the_audio_seamless()
+    {
+        // As a real Realtek endpoint through NAudio: 10 ms packets whose timestamps wobble by a few frames,
+        // each followed by an empty packet stamped 0.
+        static float Mark(int frame) => (frame % 30000 - 15000) / 32768f;
+        int[] wobble = [0, -4, 3, -2, 5, -5, 1];
+        using var recording = Start();
+        for (int k = 0; k < 150; k++)
+        {
+            RunUntil(recording, k * 10 + 15);
+            int first = k * 480;
+            recording.Deliver(Source.Input, Packets.MonoFloat, Packets.Float(480, 1, (i, _) => Mark(first + i)), At((first + wobble[k % wobble.Length]) / 48.0));
+            recording.Deliver(Source.Input, Packets.MonoFloat, [], captureTime: 0);
+        }
+
+        var file = StopAndRead(recording);
+
+        Assert.All(Enumerable.Range(0, 150 * 480), i =>
+        {
+            int expected = i % 30000 - 15000;
+            Assert.InRange(file.Input(i), expected - 1, expected + 1);
+        });
+    }
+
+    [Fact]
     public void The_Working_file_header_is_brought_up_to_date_every_second_while_recording()
     {
         using var recording = Start();
