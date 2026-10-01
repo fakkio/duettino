@@ -73,6 +73,12 @@ Machine: Windows 11 Pro 26200 (tests on 2026-09-30) then 26300 after an overnigh
 - **Measurable echo through the headset:** NCC 0.31–0.44 on 5 of 6 windows, delay **75–105 ms (median 90 ms)**, echo gain **−37 dB** relative to the loopback (headphones at 26%). The jack mic has no DSP echo suppression, so leakage from the earcups reaches the Recording. At −37 dB below the remote voice it should be inaudible in the Mix, but it confirms that echo depends on hardware and is not always suppressed.
 - Spike bug found here and fixed: the position-rate learner flipped to 44.1 kHz on a single irregular packet; it now needs 5 consecutive agreeing packets.
 
+### Test 5c: real call, Bluetooth again, Input opened as a communications stream (`--comms`) (run `call-bt-comms`, 300 s)
+- The fixed position-rate learner switched both Sources to 16 kHz after 5 packets. **Hands-Free drift: Input +0.4 ppm (225 s), Output +0.7 ppm (300 s), relative −0.3 ppm (~1 ms/hour).** Same Intel SST clock domain as before, so still not an independent-clock test.
+- Opening a second communications stream on the headset mic alongside the call app worked: no error, no reopen. Input behaviour similar to the default mode: between phrases the mic is gated to ≈ −120 dBFS, with exact digital zeros growing in the second half (5105 all-zero packets). `--comms` brings no visible benefit over the default mode here.
+- Largest system stall of all runs at 225 s: Input 106 ms without data (delivery delay up to 97 ms) plus a 10 ms loss padded exactly; Output 50–52 ms. Still well inside the 250 ms safety latency.
+- Loopback QPC lead of ~16 ms in Hands-Free confirmed (delivery median −15.8 ms). No echo.
+
 ## Numbers for the spec (so far)
 - First packet ~350–450 ms after `StartRecording` on both Sources.
 - Delivery delay (arrival minus capture QPC): Input median 1 ms (max 9); Loopback median 6 ms, p99 17 ms, max 17.6 ms. A 250 ms safety latency is ample.
@@ -81,7 +87,7 @@ Machine: Windows 11 Pro 26200 (tests on 2026-09-30) then 26300 after an overnigh
 - Mix without Leveling clips (loopback peaks reach 0 dBFS): the Mix needs headroom or a limiter.
 - MP3 encoding: 0.24 s per minute of audio (≈ 15 s for an hour).
 - Stamp tolerance: ~10 ms is enough (QPC placement error < 1 ms); lost frames flagged by `DATA_DISCONTINUITY` should be padded exactly.
-- System hiccups of 40–60 ms without data occur on both Sources at once; the 250 ms safety latency absorbs them.
+- System hiccups of 40–110 ms without data occur, often on both Sources at once (worst: 106 ms, delivery delay 97 ms); the 250 ms safety latency absorbs them, and it should not go below ~150 ms.
 
 ## NAudio 3.1 surprises
 - `WasapiCapture` and `WasapiLoopbackCapture` are `[Obsolete]`; the replacement is `WasapiRecorderBuilder` → `WasapiRecorder` (loopback via `.WithLoopbackCapture()` on a render device).
@@ -91,4 +97,4 @@ Machine: Windows 11 Pro 26200 (tests on 2026-09-30) then 26300 after an overnigh
 - First Input packets after start are all-zero (4 packets); the first packet of each stream carries `DATA_DISCONTINUITY`.
 
 ## Pending
-- Optional: Bluetooth call with the Input opened as a communications stream (`--comms`), which would also give the Hands-Free drift with the fixed position-rate learner; test 7 with truly independent clocks (no USB device available).
+ test 7 with truly independent clocks (no USB device available).
