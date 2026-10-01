@@ -19,7 +19,7 @@ sealed class FakeClock(DateTime localNow) : IClock
     }
 }
 
-/// <summary>Synthetic 48 kHz Source packets.</summary>
+/// <summary>Synthetic Source packets.</summary>
 static class Packets
 {
     public static readonly SourceFormat MonoFloat = new(48000, 1, SampleType.Float32);
@@ -33,6 +33,32 @@ static class Packets
             for (int c = 0; c < channels; c++)
                 values[i * channels + c] = sample(i, c);
         return MemoryMarshal.AsBytes(values.AsSpan()).ToArray();
+    }
+
+    /// <summary>Bytes in <paramref name="format"/> for <paramref name="frames"/> frames; <paramref name="sample"/>(frame, channel) gives each value.</summary>
+    public static byte[] Encode(SourceFormat format, int frames, Func<int, int, float> sample)
+    {
+        if (format.SampleType == SampleType.Float32) return Float(frames, format.Channels, sample);
+        var values = new short[frames * format.Channels];
+        for (int i = 0; i < frames; i++)
+            for (int c = 0; c < format.Channels; c++)
+                values[i * format.Channels + c] = (short)Math.Round(sample(i, c) * short.MaxValue);
+        return MemoryMarshal.AsBytes(values.AsSpan()).ToArray();
+    }
+}
+
+/// <summary>Capture formats as Windows declares them.</summary>
+static class WaveFormats
+{
+    /// <summary>
+    /// A plain format (<c>WAVEFORMATEX</c>, PCM or IEEE float tag) or an Extensible one (<c>WAVEFORMATEXTENSIBLE</c>,
+    /// with a sub-format and a channel mask), as shared-mode WASAPI usually reports.
+    /// </summary>
+    public static WaveFormat Create(int rate, int channels, SampleType type, bool extensible)
+    {
+        int bits = type == SampleType.Float32 ? 32 : 16;
+        if (extensible) return new WaveFormatExtensible(rate, bits, channels);
+        return type == SampleType.Float32 ? WaveFormat.CreateIeeeFloatWaveFormat(rate, channels) : new WaveFormat(rate, 16, channels);
     }
 }
 

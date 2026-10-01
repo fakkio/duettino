@@ -27,7 +27,7 @@ sealed class SourceCapture : IDisposable
         recorder = builder.Build();
         try
         {
-            format = ToSourceFormat(recorder.WaveFormat);
+            format = SourceFormat.From(recorder.WaveFormat);
         }
         catch
         {
@@ -77,15 +77,4 @@ sealed class SourceCapture : IDisposable
     static PacketFlags ToPacketFlags(AudioClientBufferFlags flags) =>
         (flags.HasFlag(AudioClientBufferFlags.DataDiscontinuity) ? PacketFlags.DataDiscontinuity : PacketFlags.None) |
         (flags.HasFlag(AudioClientBufferFlags.Silent) ? PacketFlags.Silent : PacketFlags.None);
-
-    /// <summary>Reads the capture format, whether Windows declares it plain or Extensible.</summary>
-    static SourceFormat ToSourceFormat(WaveFormat f)
-    {
-        var subFormat = f is WaveFormatExtensible x ? x.SubFormat : Guid.Empty;
-        bool isFloat = f.Encoding == WaveFormatEncoding.IeeeFloat || subFormat == AudioMediaSubtypes.MEDIASUBTYPE_IEEE_FLOAT;
-        bool isPcm = f.Encoding == WaveFormatEncoding.Pcm || subFormat == AudioMediaSubtypes.MEDIASUBTYPE_PCM;
-        if (isFloat && f.BitsPerSample == 32) return new SourceFormat(f.SampleRate, f.Channels, SampleType.Float32);
-        if (isPcm && f.BitsPerSample == 16) return new SourceFormat(f.SampleRate, f.Channels, SampleType.Pcm16);
-        throw new NotSupportedException($"{f.Encoding}, {f.BitsPerSample}-bit, {f.SampleRate} Hz, {f.Channels} channels is not supported.");
-    }
 }

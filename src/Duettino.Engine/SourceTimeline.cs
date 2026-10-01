@@ -13,7 +13,7 @@ sealed class SourceTimeline(int channels)
     /// A packet starting less than this many frames from where the previous one ended is appended right after it,
     /// so timestamp jitter doesn't chop the audio; beyond it, the packet goes exactly where its timestamp says.
     /// </summary>
-    const int Tolerance = Recording.Rate / 100;
+    internal const int Tolerance = Recording.Rate / 100;
 
     // Frame at position p lives at (p % Capacity) * channels; slots are cleared once read.
     readonly float[] ring = new float[Capacity * channels];

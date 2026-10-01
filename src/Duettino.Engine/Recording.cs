@@ -23,6 +23,8 @@ public sealed class Recording : IDisposable
     readonly WavFileWriter writer;
     readonly SourceTimeline input = new(channels: 1);
     readonly SourceTimeline output = new(channels: 2);
+    readonly FormatConverter inputConverter;
+    readonly FormatConverter outputConverter;
     readonly float[] inputChunk = new float[ChunkFrames];
     readonly float[] outputChunk = new float[ChunkFrames * 2];
     readonly short[] fileChunk = new short[ChunkFrames * 3];
@@ -35,6 +37,8 @@ public sealed class Recording : IDisposable
     Recording(string folder, IClock clock)
     {
         this.clock = clock;
+        inputConverter = new(input);
+        outputConverter = new(output);
         Directory.CreateDirectory(folder);
         var stem = "Duettino_" + clock.LocalNow.ToString("yyyy-MM-dd_HH-mm-ss", CultureInfo.InvariantCulture);
         WorkingFilePath = Path.Combine(folder, stem + WorkingFileSuffix);
@@ -59,12 +63,8 @@ public sealed class Recording : IDisposable
     /// </summary>
     public void Deliver(Source source, SourceFormat format, ReadOnlySpan<byte> data, long captureTime, PacketFlags flags = PacketFlags.None)
     {
-        var timeline = source == Source.Input ? input : output;
-        var samples = FormatConversion.Convert(format, data, flags, timeline.Channels);
-        // An empty packet carries no audio, and its timestamp can be garbage (NAudio hands one over, stamped 0, after
-        // every real packet): placing it would lose track of where the Source's audio ends.
-        if (samples.Length == 0) return;
-        timeline.Place(samples, FrameAt(captureTime));
+        var converter = source == Source.Input ? inputConverter : outputConverter;
+        converter.Deliver(format, data, flags, FrameAt(captureTime));
     }
 
     /// <summary>Writes the Working file up to the safety latency behind the clock. Call it every few milliseconds.</summary>
@@ -75,6 +75,8 @@ public sealed class Recording : IDisposable
             if (closed) return;
             long target = FrameAt(clock.Now - SafetyLatencyTicks);
             if (endFrame is { } end) target = Math.Min(target, end);
+            inputConverter.ReleaseHeldBefore(target);
+            outputConverter.ReleaseHeldBefore(target);
             while (writtenFrames < target) WriteChunk((int)Math.Min(target - writtenFrames, ChunkFrames));
             if (writtenFrames - flushedFrames >= Rate)
             {
