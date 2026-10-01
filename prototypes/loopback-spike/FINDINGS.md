@@ -1,4 +1,4 @@
-# PROTOTYPE findings: loopback spike (interim, updated after each test)
+# PROTOTYPE findings: loopback spike
 
 Machine: Windows 11 Pro 26200 (tests on 2026-09-30) then 26300 after an overnight update (call tests on 2026-10-01), .NET 10.0.12, NAudio 3.1.0. Run reports live in `runs/` (git-ignored, local only).
 
@@ -14,7 +14,7 @@ Machine: Windows 11 Pro 26200 (tests on 2026-09-30) then 26300 after an overnigh
 | Input | Microfono jack (Realtek Audio), wired headset mic | 48 kHz, 2 ch, 32-bit float, Extensible, mask 0x3 | Microphone / INTELAUDIO |
 | Input (smoke only) | Steam Streaming Microphone (virtual) | 44.1 kHz, 1 ch, 32-bit float, Extensible, mask 0x4 | Microphone / ROOT |
 
-## Results so far
+## Results
 
 ### Test 1: Output silent for ~10 s (runs `silence-stamp`, `silence-naive`)
 - After pause, Loopback capture kept delivering **all-zero packets** (100/s, never flagged `AUDCLNT_BUFFERFLAGS_SILENT`) for ~10 s, then **no packets at all** (1632 ms / 686 ms) until playback resumed. Likely the player keeps its stream open for a while; loopback goes quiet only once no render stream is active. The engine must handle both.
@@ -79,11 +79,28 @@ Machine: Windows 11 Pro 26200 (tests on 2026-09-30) then 26300 after an overnigh
 - Largest system stall of all runs at 225 s: Input 106 ms without data (delivery delay up to 97 ms) plus a 10 ms loss padded exactly; Output 50–52 ms. Still well inside the 250 ms safety latency.
 - Loopback QPC lead of ~16 ms in Hands-Free confirmed (delivery median −15.8 ms). No echo.
 
-## Numbers for the spec (so far)
-- First packet ~350–450 ms after `StartRecording` on both Sources.
-- Delivery delay (arrival minus capture QPC): Input median 1 ms (max 9); Loopback median 6 ms, p99 17 ms, max 17.6 ms. A 250 ms safety latency is ample.
+### Test U1: wired headset unplugged and plugged back mid-Recording (run `unplug-jack`, 70 s, music)
+- Pulling the jack: "Cuffie" went `Unplugged` and its Loopback capture stopped within ~0.1 s with `AudioDeviceDisconnectedException` 0x88890004 (`AUDCLNT_E_DEVICE_INVALIDATED`); "Microfono jack" followed 1.3 s later (same exception). Windows moved every default role (render and capture, Console/Multimedia/Communications) to other devices at once.
+- The clock kept the Working file running (70.03 s for 70.03 s), filling ~27.5 s of silence per Source.
+- Plugging back: endpoints `Active` again at 47.5 s / 48.2 s, defaults moved back to them; the spike's 1 s polling reopened them at 49.0 s / 49.9 s with the same format, new raw segments, 0 ms offset afterwards. Windows also moved the defaults back.
+- Before the mic was reported unplugged, the Input showed two timeline breaks (115 ms and 201 ms without data): the jack being pulled disturbs the other Source too.
+
+### Test U2: Bluetooth earbuds put back in the case mid-Recording (run `unplug-bt`, 70 s, music; Output BT, Input built-in array)
+- Output went `Unplugged` → `NotPresent` and its Loopback capture stopped at once (same 0x88890004). While the earbuds tried to reconnect the endpoint flapped `Unplugged`/`NotPresent` four times before turning `Active` at 53.4 s; reopened at 54.2 s, same format.
+- **The disconnect disturbed the other Source:** the built-in array (same Intel SST DSP) lost data repeatedly around each flap: 11 gaps (longest 1050 ms), 12 timeline breaks, 13 `DATA_DISCONTINUITY`. QPC placement padded them exactly (12 pads, 1.6 s) and kept the alignment.
+- When the default moved, the music went to the laptop speakers and the Input picked it up (−16 dBFS), while the Output stayed bound to the absent earbuds: during a call the other party would be heard only through the mic. Whether the app should follow the new default or wait for the chosen Output is a product decision for the spec.
+
+### Crash: process killed after 6 s (run `crash`, virtual devices)
+- `working.wav` (header flushed every second): header valid up to 5.79 s, 6.19 s of data actually on disk, last frame cut mid-way. The Orphan Working file opens in any player. ADR-0004 holds.
+- `input.raw.wav` (header never flushed): header says 0 bytes although 6.39 s are on disk; players see it empty.
+- **For Recovery:** take the data length from the file size, truncated to whole frames, not from the header; that also recovers the last second.
+
+## Numbers for the spec
+- First packet 30–450 ms after `StartRecording` (fast when the endpoint is already streaming, ~300–450 ms when it starts cold).
+- Delivery delay (arrival minus capture QPC): Input median 0.3–7 ms, Loopback median −16 to +6 ms depending on the endpoint path; worst case seen 97 ms.
 - Packet period 10 ms, `WasapiRecorder` buffer 100 ms, `LatencyMilliseconds` 100.
-- Drift between the built-in array and the Realtek Output: ~1 ppm (~4 ms/hour).
+- Drift between any two tested Sources: ≤ 1 ppm (~4 ms/hour), but all tested endpoints share the Intel SST clock domain.
+- Device reopen after unplug: endpoint `Active` → stream running again within ~1.5 s with 1 s polling (could react to the `DeviceStateChanged` notification instead).
 - Mix without Leveling clips (loopback peaks reach 0 dBFS): the Mix needs headroom or a limiter.
 - MP3 encoding: 0.24 s per minute of audio (≈ 15 s for an hour).
 - Stamp tolerance: ~10 ms is enough (QPC placement error < 1 ms); lost frames flagged by `DATA_DISCONTINUITY` should be padded exactly.
@@ -96,5 +113,15 @@ Machine: Windows 11 Pro 26200 (tests on 2026-09-30) then 26300 after an overnigh
 - `MMDevice.AudioClient` is obsolete (`CreateAudioClient()`); `MMDeviceEnumerator.CreateNotificationClient()` gives device-change events without hand-written COM.
 - First Input packets after start are all-zero (4 packets); the first packet of each stream carries `DATA_DISCONTINUITY`.
 
-## Pending
- test 7 with truly independent clocks (no USB device available).
+## Verdicts on ADR-0001..0005
+- **ADR-0001 (.NET 10, WinForms, NAudio 3.x): holds.** NAudio 3.1 works on .NET 10 with a Windows TFM; use `WasapiRecorder`, not the obsolete capture classes. MMDevice and recorders were used from several threads (capture threads, notification callbacks, reopen tasks) with no apartment errors. WinForms itself was not exercised (console spike).
+- **ADR-0002 (WASAPI loopback, no virtual drivers): holds, consequence text to refine.** Pre-master-volume and per-app-volume effects confirmed. "Delivers no data while nothing plays" is only half true: while an app keeps a render stream open (a paused player for ~10 s, a call app always) the loopback delivers all-zero packets; nothing arrives only when no stream is active. In Bluetooth Hands-Free the whole loopback is band-limited to ~8 kHz.
+- **ADR-0003 (MP3 via Media Foundation): holds.** 0.24 s per minute of audio, 0.94 MB/min at 128 kbps. The N-edition fallback and managed resampling of real devices were not exercised (all real endpoints were 48 kHz; resampling only on the 44.1 kHz virtual mic).
+- **ADR-0004 (unmixed 3-channel Working file, Mix at Finalization): holds.** 16.5 MB/min; a killed process leaves a readable file. Additions: Leveling must adapt over time (per-app volume changes mid-Recording) and ignore exact digital zeros; the Mix needs headroom or a limiter; Recovery should trust the file length over the header.
+- **ADR-0005 (clock-driven engine, gaps filled with silence): holds, with refinements.** Place each packet at its QPC capture timestamp, not in arrival order and not by device position (which counts at the device rate in Hands-Free, resets on profile switches, and freezes or advances during silence depending on the driver). Pad `DATA_DISCONTINUITY` losses exactly (tolerance ~10 ms). Safety latency ≥ 150 ms (250 ms used). Buffers never overflowed.
+
+## Open risks (not verifiable with the hardware at hand)
+- Drift between truly independent clocks (e.g. USB microphone + Bluetooth or HDMI Output): every tested endpoint went through the same Intel SST DSP.
+- Real-device resampling (e.g. a 44.1 kHz USB device) and devices with more than two channels.
+- Windows N/KN editions without Media Foundation.
+- Echo with a separate microphone that has no DSP echo suppression (expected ~−10…−30 dB at ~100 ms, see test 6a before convergence).
