@@ -9,7 +9,7 @@ Machine: Windows 11 Pro 26200 (tests on 2026-09-30) then 26300 after an overnigh
 | Input | Microphone Array (Intel Smart Sound Technology) | 48 kHz, 2 ch, 32-bit float, Extensible, mask 0x3 | Microphone / INTELAUDIO |
 | Output | Altoparlanti (Realtek Audio) | 48 kHz, 2 ch, 32-bit float, Extensible, mask 0x3 | Speakers / INTELAUDIO |
 | Output | Headphones (BD86), Bluetooth earbuds | 48 kHz, 2 ch, 32-bit float, Extensible, mask 0x3 | Headphones / INTELAUDIO |
-| Input (listed, not yet used) | Headset (BD86), earbuds mic | 48 kHz, 2 ch, 32-bit float, **plain IeeeFloat (not Extensible)** | Headset / INTELAUDIO, default communications |
+| Input | Headset (BD86), earbuds mic | 48 kHz, 2 ch, 32-bit float, **plain IeeeFloat (not Extensible)** | Headset / INTELAUDIO, default communications |
 | Input (smoke only) | Steam Streaming Microphone (virtual) | 44.1 kHz, 1 ch, 32-bit float, Extensible, mask 0x4 | Microphone / ROOT |
 
 ## Results so far
@@ -38,7 +38,7 @@ Machine: Windows 11 Pro 26200 (tests on 2026-09-30) then 26300 after an overnigh
 - Switch to Hands-Free (~24.5 s): Loopback capture delivered **no data for 2194 ms**; switch back (~46.1 s): **742 ms**. The stream was **not invalidated** (no RecordingStopped, no reopen) and its format stayed 48 kHz float stereo: the audio engine converts.
 - The endpoint volume reading jumped 51% → 67% during Hands-Free and back to 51% after (separate volume per profile).
 - **Device position is unreliable across profile switches:** it reset at each switch (−42.8 s, −6.5 s) and during Hands-Free it advanced at the device rate (a third of the stream rate, i.e. 16 kHz) while packets still carried 48 kHz frames. QPC timestamps stayed consistent: `stamp` placement kept both Sources at 0 ms offset. The engine must place packets by QPC, not by device position.
-- Loopback level unchanged across the switch, and a crude high-frequency ratio per second shows no narrowing during Hands-Free: the loopback is taken before the Bluetooth codec, so the Output side of the Recording stays full-band. The Input side through the headset mic will be narrowband (to check in test 5b).
+- Loopback level unchanged across the switch. **Correction (2026-10-01):** a crude high-frequency ratio first suggested no narrowing; a proper band analysis of the same file shows energy in 8–12 kHz falling from −22/−27 dB (A2DP) to **−53/−57 dB during Hands-Free** and back to −16/−27 dB after. In Hands-Free the audio engine mixes at the device rate (16 kHz), so **everything** on the Output, not only the call, is band-limited to ~8 kHz in the loopback.
 - ~2.9 s of Output were lost in total around the two switches (the engine itself was not rendering; the listener hears the dropout too).
 
 ### Tests 8, 9 and part of 7: 12-minute run, Bluetooth Output + built-in array Input, music (run `long-bt`)
@@ -55,6 +55,15 @@ Machine: Windows 11 Pro 26200 (tests on 2026-09-30) then 26300 after an overnigh
 - One 10 ms Input loss (`DATA_DISCONTINUITY`, position +10 ms) at 70 s was padded exactly by the 10 ms tolerance: final offset 0 ms (the 40 ms tolerance of the long run would have left it 10 ms off).
 - Echo: while the remote speaker talked (Output ≈ −17 dBFS), the Input stayed at −55…−58 dBFS; on 30 one-second windows no echo correlation above noise (one |NCC| 0.21 at a negative delay, i.e. double-talk, not echo). With the call running, echo of the speakers in the Input is suppressed by ≥ 40 dB on this laptop, as in test 6a after convergence.
 - The far end is gated by the call app: Output drops to −60…−74 dBFS whenever the remote side is silent (not true silence, no loopback gaps).
+
+### Test 5b: real call, Bluetooth earbuds as Output and their mic as Input, call already in Hands-Free (run `call-bt`, 300 s)
+- Input opened in the endpoint's plain `IeeeFloat` 48 kHz stereo format (not Extensible) and handled fine; no RecordingStopped, no reopen, no gaps on either Source, Working file 300.01 s for 300.01 s.
+- Both device positions counted at **16 kHz** for the whole run (one third of the 48 kHz stream). The spike logged ~60 000 false "jumps" and could not compute drift; fixed afterwards by learning the position rate against QPC.
+- Input band: energy in 4–8 kHz −22 dB, above 8 kHz −57/−66 dB: wideband speech (mSBC, 16 kHz), not 8 kHz narrowband. Built-in array for comparison: −27 dB above 8 kHz.
+- Output band during the call: 8–12 kHz at −83 dB (speakers call: −59 dB), consistent with the 16 kHz engine mix in Hands-Free.
+- Input delivered **7080 all-zero packets (~71 s of exact digital zero)** between phrases: the Hands-Free mic path gates silence to true zeros (or the call app muted it). Leveling must not treat exact zeros as signal.
+- **Loopback QPC stamps led arrival by ~16 ms** (delivery median −15.9 ms) in Hands-Free, versus +6 ms on Realtek and +0.1 ms on Bluetooth A2DP: what the loopback QPC stamp refers to differs per endpoint path, so relative alignment between Sources is only known to within ~±20 ms. Fine for a Mix; offline AEC would need its own delay search anyway.
+- No echo (headset). Output endpoint volume read 38% (the Hands-Free volume).
 
 ## Numbers for the spec (so far)
 - First packet ~350–450 ms after `StartRecording` on both Sources.
@@ -74,4 +83,4 @@ Machine: Windows 11 Pro 26200 (tests on 2026-09-30) then 26300 after an overnigh
 - First Input packets after start are all-zero (4 packets); the first packet of each stream carries `DATA_DISCONTINUITY`.
 
 ## Pending
-- Test 4 wired headphones in a real call; test 5b Bluetooth with the headset mic as Input in a real call; test 7 with truly independent clocks (no USB device available).
+- Test 4 wired headphones in a real call; test 7 with truly independent clocks (no USB device available).

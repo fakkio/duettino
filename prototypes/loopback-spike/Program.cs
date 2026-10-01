@@ -86,24 +86,37 @@ void OnData(Source s, ReadOnlySpan<byte> b, AudioClientBufferFlags flags, long d
             else s.FirstPacketMs = now;
             s.LastPacketMs = now;
             s.Delivery.Add(now - (cap + frames * 1000.0 / f.SampleRate));
+            // The device position may count at the device rate, not the stream rate (16 kHz in Bluetooth Hands-Free):
+            // learn that rate from position against QPC between two packets.
+            if (s.NextDevPos >= 0 && cap > s.LastCapMs)
+            {
+                double r = (devPos - s.LastDevPos) / ((cap - s.LastCapMs) / 1000);
+                int std = new[] { 8000, 16000, 24000, 32000, 44100, 48000, 96000 }.OrderBy(q => Math.Abs(q - r)).First();
+                if (std != s.PosRate && Math.Abs(r - std) < 0.03 * std)
+                {
+                    Log.W($"** [{now / 1000,7:F1}s] {s.Name} device position now counts at {std} Hz (stream {f.SampleRate} Hz)");
+                    s.PosRate = std; s.EndDriftRun();
+                    s.NextDevPos = devPos;
+                }
+            }
             if (s.NextDevPos >= 0 && devPos != s.NextDevPos)
             {
                 // Position jumped (e.g. no data while nothing played): log how far it disagrees with QPC, and restart the drift run
                 // so a one-off step is not read as a slope.
-                double stepMs = (devPos - s.LastDevPos) * 1000.0 / f.SampleRate - (cap - s.LastCapMs);
-                Log.W($"** [{now / 1000,7:F1}s] {s.Name} device position jumped {(devPos - s.NextDevPos) * 1000.0 / f.SampleRate:F1} ms; position minus QPC step {stepMs:+0.0;-0.0} ms");
+                double stepMs = (devPos - s.LastDevPos) * 1000.0 / s.PosRate - (cap - s.LastCapMs);
+                Log.W($"** [{now / 1000,7:F1}s] {s.Name} device position jumped {(devPos - s.NextDevPos) * 1000.0 / s.PosRate:F1} ms; position minus QPC step {stepMs:+0.0;-0.0} ms");
                 s.PosJumps++; s.PosJumpFrames += devPos - s.NextDevPos;
                 if (Math.Abs(stepMs) > 20) s.TimelineBreaks++;
                 s.EndDriftRun();
             }
-            else if (s.NextDevPos >= 0 && Math.Abs(devPos - (s.LastDevPos + (cap - s.LastCapMs) * f.SampleRate / 1000)) > 0.02 * f.SampleRate)
+            else if (s.NextDevPos >= 0 && Math.Abs(devPos - (s.LastDevPos + (cap - s.LastCapMs) * s.PosRate / 1000)) > 0.02 * s.PosRate)
             {
                 // Timeline break: the position did not move in step with QPC (e.g. it froze while nothing played).
-                Log.W($"** [{now / 1000,7:F1}s] {s.Name} timeline break: position advanced {(devPos - s.LastDevPos) * 1000.0 / f.SampleRate:F1} ms while QPC advanced {cap - s.LastCapMs:F1} ms");
+                Log.W($"** [{now / 1000,7:F1}s] {s.Name} timeline break: position advanced {(devPos - s.LastDevPos) * 1000.0 / s.PosRate:F1} ms while QPC advanced {cap - s.LastCapMs:F1} ms");
                 s.TimelineBreaks++;
                 s.EndDriftRun();
             }
-            s.LastDevPos = devPos; s.LastCapMs = cap; s.NextDevPos = devPos + frames;
+            s.LastDevPos = devPos; s.LastCapMs = cap; s.NextDevPos = devPos + (long)Math.Round(frames * (double)s.PosRate / f.SampleRate);
             s.Run.Add(cap / 1000, devPos);
             if (pk > s.Peak) s.Peak = pk;
             if (pk > s.WinPeak) s.WinPeak = pk;
@@ -224,7 +237,7 @@ Log.W("");
 Log.W($"===== SUMMARY '{label}': clock {stopAt / 1000:F2} s, Working file {written / (double)Eng.Rate:F2} s ({new FileInfo(workingPath).Length / 1048576.0:F1} MB) =====");
 inp.Summary(stopAt); outp.Summary(stopAt);
 if (inp.Best is { } bi && outp.Best is { } bo)
-    Log.W($"Relative drift Input vs Output (longest continuous runs): {bi.Ppm(inp.NominalRate) - bo.Ppm(outp.NominalRate):+0.0;-0.0} ppm = {(bi.Ppm(inp.NominalRate) - bo.Ppm(outp.NominalRate)) * 3600 / 1000:+0;-0} ms per hour");
+    Log.W($"Relative drift Input vs Output (longest continuous runs): {Fmt.Sg(bi.Ppm(inp.BestRate) - bo.Ppm(outp.BestRate))} ppm = {Fmt.Sg((bi.Ppm(inp.BestRate) - bo.Ppm(outp.BestRate)) * 3600 / 1000, "0")} ms per hour");
 
 string mixPath = Path.Combine(dir, "mix.wav");
 Post.Mix(workingPath, mixPath);
@@ -275,6 +288,7 @@ sealed class Source(string name, bool loopback, int channels, string deviceId)
 
     public long Packets, ZeroPackets, SilentFlags, Discontinuities, TimestampErrors, NativeFrames, WinPackets;
     public long NextDevPos = -1, LastDevPos, PosJumps, PosJumpFrames, TimelineBreaks;
+    public int PosRate;
     public double LastCapMs;
     public readonly List<double> Delivery = [];
     public double FirstPacketMs = -1, LastPacketMs = -1;
@@ -287,6 +301,7 @@ sealed class Source(string name, bool loopback, int channels, string deviceId)
     public double SumSq, WinSumSq;
     public long N, WinN;
     public Drift Run = new(), Best;
+    public int BestRate;
 
     public void Open(MMDeviceEnumerator en, string dir, Action<Source, ReadOnlySpan<byte>, AudioClientBufferFlags, long, long> onData, Action<Source, StoppedEventArgs> onStopped)
     {
@@ -321,7 +336,7 @@ sealed class Source(string name, bool loopback, int channels, string deviceId)
                 resampler.SetFeedMode(true);
                 resampler.SetRates(Format.SampleRate, Eng.Rate);
             }
-            LastPacketMs = -1; NextDevPos = -1;
+            LastPacketMs = -1; NextDevPos = -1; PosRate = Format.SampleRate;
         }
     }
 
@@ -338,7 +353,7 @@ sealed class Source(string name, bool loopback, int channels, string deviceId)
 
     public void EndDriftRun()
     {
-        if (Run.Duration > (Best?.Duration ?? 0)) Best = Run;
+        if (Run.Duration > (Best?.Duration ?? 0)) { Best = Run; BestRate = PosRate; }
         Run = new Drift();
     }
 
@@ -408,8 +423,8 @@ sealed class Source(string name, bool loopback, int channels, string deviceId)
             line += $" | buf {Ms(Count)} ms off {Ms(OffsetFrames)} ms under {Ms(underrunFrames)} ms";
             if (Eng.Stamp) line += $" pad {padEvents}/{Ms(padFrames)} ms drop {dropEvents}/{Ms(dropFrames)} ms";
             if (overflowFrames > 0) line += $" overflow {Ms(overflowFrames)} ms";
-            if (PosJumps > 0 || Discontinuities > 0 || TimelineBreaks > 0) line += $" | pos jumps {PosJumps} ({PosJumpFrames * 1000.0 / NominalRate:F0} ms) disc {Discontinuities} breaks {TimelineBreaks}";
-            if (Run.Duration > 20) line += $" | drift {Fmt.Sg(Run.Ppm(NominalRate), "0")} ppm ({Fmt.Sg(Run.RawDiffMs(NominalRate))} ms in {Run.Duration:F0} s)";
+            if (PosJumps > 0 || Discontinuities > 0 || TimelineBreaks > 0) line += $" | pos jumps {PosJumps} ({PosJumpFrames * 1000.0 / PosRate:F0} ms) disc {Discontinuities} breaks {TimelineBreaks}";
+            if (Run.Duration > 20) line += $" | drift {Fmt.Sg(Run.Ppm(PosRate), "0")} ppm ({Fmt.Sg(Run.RawDiffMs(PosRate))} ms in {Run.Duration:F0} s)";
             WinPackets = 0; WinPeak = 0; WinSumSq = 0; WinN = 0;
             return line;
         }
@@ -426,7 +441,7 @@ sealed class Source(string name, bool loopback, int channels, string deviceId)
             Log.W($"  formats: {string.Join("  |  ", formats.Distinct())}; reopenings {Restarts}; raw files {string.Join(", ", segments.Select(s => s.File))}");
             Log.W($"  recorder: buffer {Eng.BufferMs} ms requested, LatencyMilliseconds {Capture.LatencyMilliseconds}");
             Log.W($"  packets {Packets} (all-zero {ZeroPackets}, SILENT flag {SilentFlags}, DATA_DISCONTINUITY {Discontinuities}, TIMESTAMP_ERROR {TimestampErrors}), first after {FirstPacketMs:F0} ms, native frames {NativeFrames} ({NativeFrames / (double)NominalRate:F2} s at {NominalRate} Hz)");
-            Log.W($"  device position: jumps {PosJumps} totalling {PosJumpFrames * 1000.0 / NominalRate:F0} ms, timeline breaks (position not following QPC) {TimelineBreaks}");
+            Log.W($"  device position: jumps {PosJumps} totalling {PosJumpFrames * 1000.0 / PosRate:F0} ms, timeline breaks (position not following QPC) {TimelineBreaks}");
             var dl = Delivery.OrderBy(v => v).ToArray();
             if (dl.Length > 0) Log.W($"  delivery delay (arrival minus capture QPC of last frame) ms: median {dl[dl.Length / 2]:F1}, p99 {dl[Math.Min(dl.Length - 1, (int)(0.99 * dl.Length))]:F1}, max {dl[^1]:F1}");
             Log.W($"  packet interval ms: median {Pct(0.5):F1}, p99 {Pct(0.99):F1}, max {(iv.Length > 0 ? iv[^1] : double.NaN):F1}");
@@ -436,7 +451,7 @@ sealed class Source(string name, bool loopback, int channels, string deviceId)
             Log.W($"  engine: underrun (silence filled by the clock) {Ms(underrunFrames)} ms, overflow dropped {Ms(overflowFrames)} ms" +
                   (Eng.Stamp ? $", gap pads {padEvents} ({Ms(padFrames)} ms), drift drops {dropEvents} ({Ms(dropFrames)} ms)" : "") + $", final offset {Ms(OffsetFrames)} ms");
             if (Best != null && Best.Duration > 1)
-                Log.W($"  drift of device position vs QPC clock (longest unbroken run, {Best.Duration:F1} s): {Fmt.Sg(Best.Ppm(NominalRate))} ppm, device minus clock {Fmt.Sg(Best.RawDiffMs(NominalRate))} ms");
+                Log.W($"  drift of device position vs QPC clock (longest unbroken run, {Best.Duration:F1} s): {Fmt.Sg(Best.Ppm(BestRate))} ppm, device minus clock {Fmt.Sg(Best.RawDiffMs(BestRate))} ms");
         }
     }
 }
