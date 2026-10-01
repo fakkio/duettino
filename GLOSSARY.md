@@ -32,6 +32,22 @@ _Avoid_: headphones, speakers, system audio
 Capturing what is playing on an Output, as opposed to what a microphone hears.
 _Avoid_: system audio capture, Stereo Mix
 
+**Gap**:
+A stretch of time in which a Source delivers no audio at all; the Recording holds silence there.
+_Avoid_: dropout, hole
+
+**Source loss**:
+The chosen device of a Source disappearing during a Recording (jack pulled out, Bluetooth headset dropping).
+_Avoid_: interruption, disconnect
+
+**Fallback**:
+A Source using the Windows default device because its chosen one is absent, at startup or after a Source loss, until the chosen one returns.
+_Avoid_: auto-switch, failover
+
+**Echo**:
+The Output coming back into the Input (through the air or the hardware), so the same sound appears twice in the Mix.
+_Avoid_: feedback, bleed
+
 ### Files and Finalization
 
 **Working file**:

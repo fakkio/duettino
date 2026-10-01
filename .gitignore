@@ -483,3 +483,6 @@ $RECYCLE.BIN/
 
 # Claude Code local settings (skills are symlinked from .agents/)
 .claude/
+
+# Throwaway spikes live on prototype/* branches, never on develop
+prototypes/

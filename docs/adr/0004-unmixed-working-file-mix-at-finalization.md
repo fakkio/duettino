@@ -12,4 +12,6 @@ While a Recording runs, Duettino writes the two Sources side by side, unmixed, t
 - The Working file is larger than a mixed one (3 channels, Input mono + Output stereo, 16-bit 48 kHz: roughly 17 MB/min instead of 10, around 1 GB for an hour) and is not meant to be played as is.
 - It sits in the destination folder, next to where the Recording file will land (`<name>.working.wav`), so it survives an uninstall and its disk usage is visible.
 - Separate tracks per Source and offline echo cancellation (with the Output as reference) become cheap later, since Finalization has both Sources.
-- An Orphan Working file left by a crash still holds everything needed for Recovery.
+- An Orphan Working file left by a crash still holds everything needed for Recovery. Its header (flushed every second) lags the data by up to a second, so Recovery takes the length from the file size, truncated to whole frames.
+- Leveling cannot be one gain per Source: per-app volume can change mid-Recording, so it adapts over time windows, and it ignores stretches of exact digital zeros (a Bluetooth headset mic sends tens of seconds of them between phrases).
+- The loopback reaches 0 dBFS, so the Mix needs headroom or a limiter.

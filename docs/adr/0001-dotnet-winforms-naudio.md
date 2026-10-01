@@ -11,3 +11,4 @@ Duettino is a small native Windows app built on .NET 10 with WinForms for the UI
 ## Consequences
 
 - WinForms cannot be trimmed (`NETSDK1175`), so a self-contained build stays around 50 MB compressed.
+- NAudio 3 needs a Windows target framework (`net10.0-windows10.0.19041.0`) for WASAPI and Media Foundation. Its capture classes `WasapiCapture`/`WasapiLoopbackCapture` are obsolete: Duettino uses `WasapiRecorder`, whose per-packet callback carries the buffer flags and capture timestamp the engine needs (ADR-0005).

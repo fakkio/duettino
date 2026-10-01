@@ -128,35 +128,66 @@ Candidates to become ADRs during `/grill-with-docs`.
 
 ## 5. Known technical pitfalls
 
-- **Loopback goes quiet during silence.** When no sound is coming out of the Output device,
-  Windows doesn't deliver silence packets: *it delivers nothing*. If the Recording's pace
-  were driven by incoming data, the two Sources would drift out of sync. We need an
-  internal clock that drives the writing and fills the gaps with silence, with a small
-  safety latency (~200–300 ms) to absorb jitter.
+> Updated on 2026-10-01 with the results of the hardware spike (branch
+> `prototype/loopback-spike` @ `6f84614`, `prototypes/loopback-spike/FINDINGS.md`).
+
+- **Loopback goes quiet in two ways.** While an app keeps a render stream open (a paused
+  player for ~10 s, a call app all the time), Loopback capture delivers packets of exact
+  zeros, never flagged as silent. Only when no stream is active does it deliver *nothing*,
+  for as long as the silence lasts (seen: 0.7–4.6 s). If the Recording's pace were driven
+  by incoming data, the two Sources would drift out of sync. An internal clock drives the
+  writing, places each packet at its capture timestamp and fills the gaps with silence,
+  with a safety latency (250 ms used, never below ~150 ms) to absorb delivery delays.
+- **System hiccups.** Stalls of 40–110 ms without data happen, often on both Sources at
+  once, and occasionally Windows drops 10–50 ms of audio (flagged as a discontinuity).
+  The safety latency absorbs the stalls; the dropped frames must be padded exactly, or
+  the Sources stay out of step for the rest of the Recording.
 - **Clock drift.** Input and Output have different hardware clocks (all the more so
-  if they are different devices): over an hour they can
-  diverge by fractions of a second. The buffers must tolerate slight underruns (→ silence)
+  if they are different devices). Measured: ≤ 1 ppm (~4 ms/hour), but every endpoint
+  tried went through the same Intel SST DSP; truly independent clocks (USB mic + HDMI or
+  Bluetooth Output) are untested. The buffers must tolerate slight underruns (→ silence)
   and overflows (→ discard), without growing forever.
-- **Bluetooth headsets and the "Hands-Free" profile.** On some setups, when the BT headset's
-  mic activates, audio switches to a different endpoint ("Headset / Hands-Free")
-  from the stereo one. If I record the wrong endpoint, I capture silence. Windows 11
-  tends to unify them, but this must be checked with the real headset. Hence the idea of a
-  "Default communication device" option (see open questions).
+- **Bluetooth headsets and the "Hands-Free" profile.** Windows 11 shows one render and
+  one capture endpoint per headset (no separate Hands-Free endpoint), so recording the
+  wrong endpoint is no longer a risk there. What remains when the headset mic opens and
+  the link switches to Hands-Free: 0.7–2.2 s with no loopback data at each switch (the
+  listener hears the dropout too); **everything** on that Output, not only the call, is
+  band-limited to ~8 kHz in the loopback; a separate volume per profile; and the headset
+  mic sends tens of seconds of exact digital zeros between phrases. The device position
+  reported by Windows is useless across profile switches (it resets and counts at
+  16 kHz), so timing relies on capture timestamps.
 - **Echo with speakers.** If the Output is the speakers, the Input (microphone) also picks up
   the other people's voices coming out of the speakers: in the Mix those voices appear **twice**,
-  once from the loopback and once from the microphone a few tens of ms later, producing an
-  echo. The call app cancels echo only on *its own* stream, not on the one we capture.
-  Possible answers: accept it (it stays understandable), use Windows' "communications" mode
-  to get system echo cancellation where the driver offers it, or our own echo cancellation
-  (e.g. WebRTC AEC or SpeexDSP): **the loopback is exactly the reference signal** the
-  algorithm needs. See open questions.
+  once from the loopback and once from the microphone **~100 ms later** (measured 75–115 ms),
+  producing an echo. The call app cancels echo only on *its own* stream, not on the one we
+  capture. How bad it is depends entirely on the hardware: the laptop's microphone array
+  suppresses it by 40–60 dB in its own DSP (even in RAW mode); a wired headset's mic leaks
+  the earcups at −37 dB; a separate microphone without DSP should be expected at
+  −10…−30 dB for the whole call (untested). Possible answers: accept it, Windows'
+  "communications" mode with system echo cancellation where the driver offers it, or our
+  own offline echo cancellation: **the loopback is exactly the reference signal** the
+  algorithm needs, but it would need its own delay search (≥ 200 ms window), since the
+  loopback's timestamps are only accurate to about ±20 ms against the Input's.
 - **The call app may use an output other than the default one.** The user must
   choose the Output that Teams/Zoom actually uses.
-- **Device unplugged during a Recording** (jack pulled out, BT dropping): the
-  capture stops with an error → the app must stop cleanly, save what it has and
-  warn the user.
+- **Default devices change on their own.** Plugging or unplugging a jack or a Bluetooth
+  headset makes Windows move every default role (render and capture, multimedia and
+  communications) at once, and device positions in the list shift. Devices must be
+  remembered by endpoint ID, and the user's chosen Output may stop being the one the call
+  plays on.
+- **Device unplugged during a Recording** (jack pulled out, BT dropping): the capture
+  stops within ~0.1 s with a "device invalidated" error. A Bluetooth headset flaps between
+  unplugged and not-present while it tries to reconnect; once the endpoint is active again,
+  capture can be reopened within ~1.5 s with the same format. When both Sources share a
+  DSP, losing one **disturbs the other** too (gaps of up to ~1 s on the built-in mic when
+  the earbuds dropped). Decided behaviour (Source loss): the Recording goes on, the Source
+  falls back to the Windows default device while its chosen one is absent and returns to
+  it when it comes back (see §13).
 - **"Extensible" formats.** Devices' mix format is often declared as
-  *WaveFormatExtensible* (32-bit float) and must be recognised and handled correctly.
+  *WaveFormatExtensible* (32-bit float) and must be recognised and handled correctly;
+  some endpoints (the Bluetooth headset mic) declare plain IEEE float instead.
+- **Clipping.** The loopback reaches 0 dBFS: adding the two Sources without Leveling
+  clips, so the Mix needs headroom or a limiter.
 - **Windows MP3 encoder:** it accepts 16-bit PCM at 44.1/48 kHz, so the Working file
   must be written in that format.
 - **"Microphone in use" icon.** If the meters were always active (even when not
@@ -222,7 +253,11 @@ streams and an injectable clock, so it can be tested with synthetic signals:
 - a Source that goes quiet (no data) → silence in the file, correct duration, no drift;
 - simulated drift between the Sources over long durations → no unbounded buffer growth;
 - a sum beyond full scale → clipping, no wrap-around;
-- Working file still valid if the process is interrupted after a flush.
+- Working file still valid if the process is interrupted after a flush;
+- added after the spike: packets placed by capture timestamp, both kinds of silence (zero
+  packets and no packets), `DATA_DISCONTINUITY` losses padded exactly, simulated drift of
+  ±100 ppm, 44.1 kHz and 6-channel Sources, Finalization without an MP3 encoder, Recovery
+  from a file whose header lags its data.
 
 **Manual verification** (checklist with real hardware):
 
@@ -231,7 +266,11 @@ streams and an injectable clock, so it can be tested with synthetic signals:
 - Input and Output on different devices (e.g. webcam mic + USB headphones);
 - long call (≥ 1 hour): voice sync at the end, file size, Finalization time;
 - headphones unplugged mid-Recording;
-- closing the app during a Recording.
+- closing the app during a Recording;
+- left open by the spike (needs other hardware): truly independent clocks (USB mic +
+  HDMI or Bluetooth Output), a real device not at 48 kHz or with more than two channels,
+  a Windows N edition without the Media Feature Pack, echo with a separate microphone
+  without DSP, the "microphone in use" icon in the real app.
 
 ## 10. How to proceed
 
@@ -372,9 +411,9 @@ features went to `docs/IDEAS.md`; vocabulary went to `GLOSSARY.md`.
 
 1. **Relative volumes:** the Working file keeps the two Sources unmixed (3 channels:
    Input mono + Output stereo); Leveling and the Mix happen at Finalization (ADR-0004).
-   Leveling is automatic, measured only where a Source is actually active, with the
-   boost capped (e.g. +12 dB) so a silent Input's room noise isn't blown up. No sliders,
-   no on/off switch in v1.
+   Leveling is automatic, measured only where a Source is actually active, adapting over
+   time (see ADR-0004), with the boost capped (e.g. +12 dB) so a silent Input's room
+   noise isn't blown up. No sliders, no on/off switch in v1.
 2. **Devices at startup:** remember the last Input and Output by device ID (settings in
    `%AppData%`); on first run, or if a remembered device is gone, fall back to the Windows
    default (multimedia) devices and show that the fallback happened. No "Default
@@ -399,6 +438,15 @@ features went to `docs/IDEAS.md`; vocabulary went to `GLOSSARY.md`.
 9. **Echo with speakers:** accepted in v1, no in-app warning (Windows can't reliably tell
    speakers from headphones); a README FAQ entry covers it. Offline echo cancellation at
    Finalization is in IDEAS, pending the `/prototype` measurements.
+
+### After the hardware spike (2026-10-01)
+
+10. **Source loss:** when the chosen device of a Source disappears mid-Recording, the
+    Recording goes on; the Source falls back to the Windows default device while its chosen
+    one is absent, and returns to the chosen one when it comes back. A notice in the window
+    says so (no dialog). With no device at all, the Source records silence and waits. Same
+    for Input and Output; the echo that may follow (Output falling back to speakers) is
+    accepted, as in point 9.
 
 ## Legal note
 
