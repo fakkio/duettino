@@ -92,12 +92,19 @@ void OnData(Source s, ReadOnlySpan<byte> b, AudioClientBufferFlags flags, long d
             {
                 double r = (devPos - s.LastDevPos) / ((cap - s.LastCapMs) / 1000);
                 int std = new[] { 8000, 16000, 24000, 32000, 44100, 48000, 96000 }.OrderBy(q => Math.Abs(q - r)).First();
+                // Switch only after 5 consecutive packets agree, so one irregular packet does not flip the rate.
                 if (std != s.PosRate && Math.Abs(r - std) < 0.03 * std)
                 {
-                    Log.W($"** [{now / 1000,7:F1}s] {s.Name} device position now counts at {std} Hz (stream {f.SampleRate} Hz)");
-                    s.PosRate = std; s.EndDriftRun();
-                    s.NextDevPos = devPos;
+                    s.PosRateVotes = std == s.PosRateCandidate ? s.PosRateVotes + 1 : 1;
+                    s.PosRateCandidate = std;
+                    if (s.PosRateVotes >= 5)
+                    {
+                        Log.W($"** [{now / 1000,7:F1}s] {s.Name} device position now counts at {std} Hz (stream {f.SampleRate} Hz)");
+                        s.EndDriftRun(); s.PosRate = std; s.PosRateVotes = 0;
+                        s.NextDevPos = devPos;
+                    }
                 }
+                else s.PosRateVotes = 0;
             }
             if (s.NextDevPos >= 0 && devPos != s.NextDevPos)
             {
@@ -288,7 +295,7 @@ sealed class Source(string name, bool loopback, int channels, string deviceId)
 
     public long Packets, ZeroPackets, SilentFlags, Discontinuities, TimestampErrors, NativeFrames, WinPackets;
     public long NextDevPos = -1, LastDevPos, PosJumps, PosJumpFrames, TimelineBreaks;
-    public int PosRate;
+    public int PosRate, PosRateCandidate, PosRateVotes;
     public double LastCapMs;
     public readonly List<double> Delivery = [];
     public double FirstPacketMs = -1, LastPacketMs = -1;

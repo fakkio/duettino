@@ -10,6 +10,8 @@ Machine: Windows 11 Pro 26200 (tests on 2026-09-30) then 26300 after an overnigh
 | Output | Altoparlanti (Realtek Audio) | 48 kHz, 2 ch, 32-bit float, Extensible, mask 0x3 | Speakers / INTELAUDIO |
 | Output | Headphones (BD86), Bluetooth earbuds | 48 kHz, 2 ch, 32-bit float, Extensible, mask 0x3 | Headphones / INTELAUDIO |
 | Input | Headset (BD86), earbuds mic | 48 kHz, 2 ch, 32-bit float, **plain IeeeFloat (not Extensible)** | Headset / INTELAUDIO, default communications |
+| Output | Cuffie (Realtek Audio), wired headset on the jack | 48 kHz, 2 ch, 32-bit float, Extensible, mask 0x3 | Headphones / INTELAUDIO |
+| Input | Microfono jack (Realtek Audio), wired headset mic | 48 kHz, 2 ch, 32-bit float, Extensible, mask 0x3 | Microphone / INTELAUDIO |
 | Input (smoke only) | Steam Streaming Microphone (virtual) | 44.1 kHz, 1 ch, 32-bit float, Extensible, mask 0x4 | Microphone / ROOT |
 
 ## Results so far
@@ -65,6 +67,12 @@ Machine: Windows 11 Pro 26200 (tests on 2026-09-30) then 26300 after an overnigh
 - **Loopback QPC stamps led arrival by ~16 ms** (delivery median −15.9 ms) in Hands-Free, versus +6 ms on Realtek and +0.1 ms on Bluetooth A2DP: what the loopback QPC stamp refers to differs per endpoint path, so relative alignment between Sources is only known to within ~±20 ms. Fine for a Mix; offline AEC would need its own delay search anyway.
 - No echo (headset). Output endpoint volume read 38% (the Hands-Free volume).
 
+### Test 4: real call, wired headset on the jack (headphones as Output, headset mic as Input) (run `call-wired`, 300 s)
+- Plugging the jack created two new endpoints, "Cuffie (Realtek)" and "Microfono jack (Realtek)", separate from the speakers and the built-in array, and **Windows moved both default and default-communications roles to them on its own**. Device indices shift when hardware is plugged in: the app must key devices by endpoint ID, and the defaults can change under the user.
+- Clean run: Working file 300.03 s for 300.03 s, no reopen, no data loss; one 53–57 ms delivery stall on both Sources at once at 148.7 s (system hiccup, positions continuous). Drift ≈ 0 (Input +0.4 ppm; the Output figure in the report is an artefact of a spike bug, see below).
+- **Measurable echo through the headset:** NCC 0.31–0.44 on 5 of 6 windows, delay **75–105 ms (median 90 ms)**, echo gain **−37 dB** relative to the loopback (headphones at 26%). The jack mic has no DSP echo suppression, so leakage from the earcups reaches the Recording. At −37 dB below the remote voice it should be inaudible in the Mix, but it confirms that echo depends on hardware and is not always suppressed.
+- Spike bug found here and fixed: the position-rate learner flipped to 44.1 kHz on a single irregular packet; it now needs 5 consecutive agreeing packets.
+
 ## Numbers for the spec (so far)
 - First packet ~350–450 ms after `StartRecording` on both Sources.
 - Delivery delay (arrival minus capture QPC): Input median 1 ms (max 9); Loopback median 6 ms, p99 17 ms, max 17.6 ms. A 250 ms safety latency is ample.
@@ -83,4 +91,4 @@ Machine: Windows 11 Pro 26200 (tests on 2026-09-30) then 26300 after an overnigh
 - First Input packets after start are all-zero (4 packets); the first packet of each stream carries `DATA_DISCONTINUITY`.
 
 ## Pending
-- Test 4 wired headphones in a real call; test 7 with truly independent clocks (no USB device available).
+- Optional: Bluetooth call with the Input opened as a communications stream (`--comms`), which would also give the Hands-Free drift with the fixed position-rate learner; test 7 with truly independent clocks (no USB device available).
