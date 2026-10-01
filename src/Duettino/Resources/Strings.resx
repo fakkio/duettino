@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AppTitle" xml:space="preserve">
+    <value>Duettino</value>
+  </data>
+  <data name="InputLabel" xml:space="preserve">
+    <value>Input:</value>
+  </data>
+  <data name="OutputLabel" xml:space="preserve">
+    <value>Output:</value>
+  </data>
+  <data name="Input" xml:space="preserve">
+    <value>Input</value>
+  </data>
+  <data name="Output" xml:space="preserve">
+    <value>Output</value>
+  </data>
+  <data name="RecordButton" xml:space="preserve">
+    <value>● Record</value>
+  </data>
+  <data name="StopButton" xml:space="preserve">
+    <value>■ Stop</value>
+  </data>
+  <data name="NoDevice" xml:space="preserve">
+    <value>(no device: recorded as silence)</value>
+  </data>
+  <data name="RecordingNotice" xml:space="preserve">
+    <value>Recording…</value>
+    <comment>Notice while a Recording runs.</comment>
+  </data>
+  <data name="WorkingFileSaved" xml:space="preserve">
+    <value>Saved {0}</value>
+    <comment>{0}: path of the Working file.</comment>
+  </data>
+  <data name="CannotStart" xml:space="preserve">
+    <value>Couldn't start recording: {0}</value>
+    <comment>{0}: the error message.</comment>
+  </data>
+  <data name="CannotStop" xml:space="preserve">
+    <value>The Recording stopped with an error: {0}</value>
+    <comment>{0}: the error message.</comment>
+  </data>
+  <data name="SourceFailed" xml:space="preserve">
+    <value>{0} is recorded as silence from now on: {1}</value>
+    <comment>{0}: Input or Output; {1}: the error message.</comment>
+  </data>
+</root>
