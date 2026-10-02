@@ -322,6 +322,155 @@ public sealed class RecordingTests : IDisposable
         Assert.InRange(Rms(file.OutputLeft, 497, 503), 0.8 * ToneRms, 1.2 * ToneRms);
     }
 
+    [Theory]
+    [InlineData(3)]
+    [InlineData(10)]
+    [InlineData(25)]
+    [InlineData(50)]
+    public void Audio_Windows_reports_lost_is_padded_exactly_leaving_no_offset_between_the_Sources(int lossMs)
+    {
+        // Both Sources deliver every frame's own index, in 10 ms packets; at 1 s the Input loses lossMs of frames,
+        // and the packet after the loss comes flagged with a data discontinuity.
+        static float Mark(int frame) => (frame % 30000 - 15000) / 32768f;
+        int lossStart = Rate, lossEnd = Rate + lossMs * 48;
+        using var recording = Start();
+        for (int first = 0; first < 2 * Rate; first += 480)
+        {
+            RunUntil(recording, first / 48.0 + 15);
+            recording.Deliver(Source.Output, Packets.StereoFloat, Packets.Float(480, 2, (i, _) => Mark(first + i)), At(first / 48.0));
+            int from = first >= lossStart && first < lossEnd ? lossEnd : first;
+            if (from >= first + 480) continue;
+            var flags = from == lossEnd ? PacketFlags.DataDiscontinuity : PacketFlags.None;
+            recording.Deliver(Source.Input, Packets.MonoFloat, Packets.Float(first + 480 - from, 1, (i, _) => Mark(from + i)), At(from / 48.0), flags);
+        }
+
+        var file = StopAndRead(recording);
+
+        Assert.All(Enumerable.Range(0, 2 * Rate), i =>
+        {
+            int expected = i % 30000 - 15000;
+            Assert.InRange(file.OutputLeft(i), expected - 1, expected + 1);
+            if (i >= lossStart && i < lossEnd) Assert.Equal(0, file.Input(i));
+            else Assert.InRange(file.Input(i), expected - 1, expected + 1);
+        });
+    }
+
+    [Fact]
+    public void A_Source_running_ahead_of_the_clock_has_its_audio_dropped_beyond_two_seconds_ahead()
+    {
+        // An Output delivering 20 ms of a tone every 10 ms, stamped by its frame count, so it runs further and
+        // further ahead of the clock. The packet delivered at 10k + 15 ms covers 20k to 20k + 20 ms, while the
+        // Working file is written up to 10k - 235 ms: only what lies up to 2 s beyond that is kept, until ~3.5 s.
+        using var recording = Start();
+        for (int k = 0; k < 600; k++)
+        {
+            RunUntil(recording, 10 * k + 15);
+            recording.Deliver(Source.Output, Packets.StereoFloat, Packets.Float(960, 2, (i, _) => (float)(0.5 * Math.Sin(2 * Math.PI * 440 * (960 * k + i) / Rate))), At(20 * k));
+        }
+
+        var file = StopAndRead(recording);
+
+        Assert.Equal(6005 * 48, file.Frames);
+        AssertTone(file.OutputLeft, 0, 3400, toneStartMs: 0, hz: 440);
+        Assert.All(Enumerable.Range(3600 * 48, file.Frames - 3600 * 48), i => Assert.Equal(0, file.OutputLeft(i)));
+    }
+
+    const double DriftingToneHz = 70;
+
+    [Theory]
+    [InlineData(Source.Output, 44100, 300)]
+    [InlineData(Source.Output, 44100, -300)]
+    [InlineData(Source.Input, 48000, 100)]
+    [InlineData(Source.Input, 48000, -100)]
+    public void A_Source_whose_clock_drifts_from_its_timestamps_is_recorded_unbroken_and_on_time(Source source, int rate, int ppm)
+    {
+        var channel = RecordDriftingTone(source, rate, ppm, seconds: 120);
+
+        // The tone, as its timestamps place it on the timeline.
+        double warp = 1 + ppm * 1e-6, hz = DriftingToneHz / warp, endMs = 120_000 * warp;
+        AssertContinuousTone(channel, 3, endMs - 3, hz);
+        for (int s = 0; s + 1 < endMs / 1000; s++)
+            Assert.InRange(ToneOffsetMs(channel, s * 1000, s * 1000 + 1000, hz), s < 30 ? -2.5 : -1.5, s < 30 ? 2.5 : 1.5);
+    }
+
+    [Theory]
+    [InlineData(5)]
+    [InlineData(25)] // not a multiple of the 70 Hz period, which the offset is measured modulo
+    public void Audio_lost_from_a_drifting_Source_is_padded_exactly_and_not_taken_back_as_drift(int lossMs)
+    {
+        const int Ppm = 300;
+        var channel = RecordDriftingTone(Source.Output, 44100, Ppm, seconds: 90, lossAtMs: 60_000, lossMs);
+
+        double warp = 1 + Ppm * 1e-6, hz = DriftingToneHz / warp, endMs = 90_000 * warp;
+        double lossStartMs = 60_000 * warp, lossEndMs = (60_000 + lossMs) * warp;
+        AssertContinuousTone(channel, 3, lossStartMs - 2, hz);
+        Assert.All(Enumerable.Range((int)((lossStartMs + 2) * 48), (int)((lossEndMs - lossStartMs - 4) * 48)), i => Assert.Equal(0, channel(i)));
+        AssertContinuousTone(channel, lossEndMs + 2, endMs - 3, hz);
+        // On time on both sides of the loss: after it, as before it, not lossMs late.
+        for (int s = 30; s + 1 < endMs / 1000; s++)
+            if (s != 60) Assert.InRange(ToneOffsetMs(channel, s * 1000, s * 1000 + 1000, hz), -1.5, 1.5);
+    }
+
+    /// <summary>
+    /// Records a Source whose data runs <paramref name="ppm"/> off its capture timestamps, as a virtual device does
+    /// (+256 ppm was measured): <paramref name="seconds"/> of a 70 Hz tone in 10 ms packets, each frame stamped
+    /// (1 + ppm) later than its count says. Optionally the frames from <paramref name="lossAtMs"/> on, by their count,
+    /// are lost for <paramref name="lossMs"/>, the packet after the loss flagged with a data discontinuity.
+    /// Returns the Source's channel (the left one for the Output) in the Working file.
+    /// </summary>
+    Func<int, short> RecordDriftingTone(Source source, int rate, int ppm, int seconds, int lossAtMs = 0, int lossMs = 0)
+    {
+        double warp = 1 + ppm * 1e-6;
+        var format = new SourceFormat(rate, source == Source.Input ? 1 : 2, SampleType.Float32);
+        int packetFrames = rate / 100;
+        long lossStart = (long)lossAtMs * rate / 1000, lossEnd = lossStart + (long)lossMs * rate / 1000;
+        using var recording = Start();
+        for (long first = 0; first < (long)seconds * rate; first += packetFrames)
+        {
+            double ms = first * 1000.0 / rate * warp;
+            RunUntil(recording, ms + 15);
+            long from = first >= lossStart && first < lossEnd ? lossEnd : first;
+            if (from >= first + packetFrames) continue;
+            var flags = lossMs > 0 && from == lossEnd ? PacketFlags.DataDiscontinuity : PacketFlags.None;
+            var packet = Packets.Encode(format, (int)(first + packetFrames - from), (i, _) => (float)(0.5 * Math.Sin(2 * Math.PI * DriftingToneHz * (from + i) / rate)));
+            recording.Deliver(source, format, packet, At(from * 1000.0 / rate * warp), flags);
+        }
+
+        var file = StopAndRead(recording);
+        return source == Source.Input ? file.Input : file.OutputLeft;
+    }
+
+    /// <summary>
+    /// Asserts that <paramref name="channel"/> holds one unbroken tone from <paramref name="fromMs"/> to
+    /// <paramref name="toMs"/>: each frame follows from its two neighbours as a sine's does. Silence cut in, or audio
+    /// skipped, for even a few frames breaks that by hundreds.
+    /// </summary>
+    static void AssertContinuousTone(Func<int, short> channel, double fromMs, double toMs, double hz)
+    {
+        double twoCos = 2 * Math.Cos(2 * Math.PI * hz / Rate);
+        for (int i = (int)(fromMs * 48) + 1; i < (int)(toMs * 48) - 1; i++)
+        {
+            double residual = channel(i + 1) + channel(i - 1) - twoCos * channel(i);
+            if (Math.Abs(residual) > 30) Assert.Fail($"The tone breaks at {i / 48.0:F2} ms (residual {residual:F0}).");
+        }
+    }
+
+    /// <summary>
+    /// How late the tone in <paramref name="channel"/> runs, between <paramref name="fromMs"/> and <paramref name="toMs"/>,
+    /// behind a sine of <paramref name="hz"/> starting at the Recording's start: within half a period either way.
+    /// </summary>
+    static double ToneOffsetMs(Func<int, short> channel, double fromMs, double toMs, double hz)
+    {
+        double omega = 2 * Math.PI * hz / Rate, sin = 0, cos = 0;
+        for (int i = (int)(fromMs * 48); i < (int)(toMs * 48); i++)
+        {
+            sin += channel(i) * Math.Sin(omega * i);
+            cos += channel(i) * Math.Cos(omega * i);
+        }
+        // A tone late by d reads as sin(ω(i - d)) = sin(ωi)cos(ωd) - cos(ωi)sin(ωd).
+        return Math.Atan2(-cos, sin) / omega / 48;
+    }
+
     const double ToneRms = 0.5 / 1.41421356 * short.MaxValue;
 
     static double Rms(Func<int, short> channel, double fromMs, double toMs) =>

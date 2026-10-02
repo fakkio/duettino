@@ -1,43 +1,47 @@
+using System.Collections.Concurrent;
+
 namespace Duettino.Engine;
 
 /// <summary>
 /// Brings one Source's audio from its own sample rate to 48 kHz, in managed code (ADR-0003), packet after packet:
-/// band-limited interpolation with a Kaiser-windowed sinc, its coefficients worked out once per phase.
+/// band-limited interpolation with a Kaiser-windowed sinc, its coefficients worked out once on a fine grid of phases.
+/// The ratio can be nudged by a <see cref="Correction"/> while it runs, to follow a Source whose clock drifts.
 /// </summary>
 /// <remarks>
-/// Resampled frame <c>n</c> is the input at time <c>n / 48 kHz</c> after the input's first frame, with no filter delay:
-/// it is emitted once the input reaches a few frames past that time, so the last frames pushed are held back until
-/// the next push, or until <see cref="Flush"/> when the input stops there.
+/// Resampled frame <c>n</c> is the input at time <c>n / 48 kHz</c> after the input's first frame (stretched by the
+/// correction in force), with no filter delay: it is emitted once the input reaches a few frames past that time, so the
+/// last frames pushed are held back until the next push, or until <see cref="Flush"/> when the input stops there.
+/// At 48 kHz with no correction, every frame comes out exactly as it went in.
 /// </remarks>
 sealed class Resampler
 {
     const int ZeroCrossings = 32;
     const double Passband = 0.95;
     const double KaiserBeta = 8;
+    const int PhaseCount = 512;
+
+    static readonly ConcurrentDictionary<int, Kernel> Kernels = new();
 
     readonly int channels;
-    readonly int upFactor;   // resampled frames per…
-    readonly int downFactor; // …input frames, reduced: resampled frame n sits at input frame n * downFactor / upFactor
+    readonly double nominalStep; // input frames per resampled frame
     readonly int halfWidth;
-    readonly float[][] phases;
+    readonly float[][] phases; // the taps at fraction p / PhaseCount of an input frame past the nearest input frame, p = 0..PhaseCount
+    readonly float[] taps;
+    double step;
     float[] history;
     int historyFrames;
     long historyStart; // input frame index of history[0]
     long inputFrames;
     long outputFrames; // resampled frames emitted so far
+    long nextWhole;    // the next resampled frame sits at input frame nextWhole + nextFraction
+    double nextFraction;
 
     public Resampler(int inputRate, int channels)
     {
         this.channels = channels;
-        int gcd = (int)System.Numerics.BigInteger.GreatestCommonDivisor(inputRate, Recording.Rate);
-        upFactor = Recording.Rate / gcd;
-        downFactor = inputRate / gcd;
-
-        // Cut-off in cycles per input frame, just below the lower of the two Nyquist frequencies.
-        double cutoff = 0.5 * Passband * Math.Min(1, (double)Recording.Rate / inputRate);
-        halfWidth = (int)Math.Ceiling(ZeroCrossings / (2 * cutoff));
-        phases = new float[upFactor][];
-        for (int p = 0; p < upFactor; p++) phases[p] = Coefficients((double)p / upFactor, cutoff);
+        nominalStep = step = (double)inputRate / Recording.Rate;
+        (halfWidth, phases) = Kernels.GetOrAdd(inputRate, Kernel.For);
+        taps = new float[2 * halfWidth];
 
         // The input before the first frame reads as silence.
         history = new float[2 * halfWidth * channels];
@@ -45,8 +49,17 @@ sealed class Resampler
         historyStart = -halfWidth;
     }
 
+    /// <summary>
+    /// How much the resampled audio is stretched from now on: 0.001 makes 0.1% more resampled frames out of the same
+    /// input, -0.001 0.1% fewer.
+    /// </summary>
+    public double Correction
+    {
+        set => step = nominalStep / (1 + value);
+    }
+
     /// <summary>Where the input pushed so far ends, in 48 kHz frames from the input's first frame.</summary>
-    public double InputEnd => (double)inputFrames * upFactor / downFactor;
+    public double InputEnd => outputFrames + (inputFrames - nextWhole - nextFraction) / step;
 
     /// <summary>Where the resampled frames emitted so far end, in 48 kHz frames from the input's first frame.</summary>
     public long Emitted => outputFrames;
@@ -75,56 +88,41 @@ sealed class Resampler
     float[] Emit(long inputEnd, out long position)
     {
         position = outputFrames;
-        // Resampled frame n needs the input up to frame floor(n * downFactor / upFactor) + halfWidth.
-        long end = inputEnd > 0 ? (inputEnd * upFactor - 1) / downFactor + 1 : 0;
-        int count = (int)Math.Max(0, end - outputFrames);
-        var result = new float[count * channels];
-        for (int i = 0; i < count; i++, outputFrames++)
+        // Resampled frame n needs the input up to its nearest input frame + halfWidth.
+        int bound = (int)Math.Max(0, Math.Ceiling((inputEnd - nextWhole - nextFraction) / step) + 1);
+        var result = new float[bound * channels];
+        int count = 0;
+        for (; nextWhole < inputEnd; count++)
         {
-            long at = outputFrames * downFactor;
-            var coefficients = phases[at % upFactor];
-            int first = (int)(at / upFactor - halfWidth + 1 - historyStart);
-            var frame = result.AsSpan(i * channels, channels);
-            for (int k = 0; k < coefficients.Length; k++)
+            var coefficients = TapsAt(nextFraction);
+            int first = (int)(nextWhole - halfWidth + 1 - historyStart) * channels;
+            for (int c = 0; c < channels; c++)
             {
-                var source = history.AsSpan((first + k) * channels, channels);
-                for (int c = 0; c < channels; c++) frame[c] += coefficients[k] * source[c];
+                float sum = 0;
+                for (int k = 0, at = first + c; k < coefficients.Length; k++, at += channels) sum += coefficients[k] * history[at];
+                result[count * channels + c] = sum;
             }
+            outputFrames++;
+            nextFraction += step;
+            double carry = Math.Floor(nextFraction);
+            nextWhole += (long)carry;
+            nextFraction -= carry;
         }
-        Discard(outputFrames * downFactor / upFactor - halfWidth + 1);
-        return result;
+        Discard(nextWhole - halfWidth + 1);
+        return count == bound ? result : result[..(count * channels)];
     }
 
     /// <summary>The taps for a resampled frame <paramref name="fraction"/> of an input frame past its nearest input frame.</summary>
-    float[] Coefficients(double fraction, double cutoff)
+    float[] TapsAt(double fraction)
     {
-        var taps = new float[2 * halfWidth];
-        double sum = 0;
-        var values = new double[taps.Length];
-        for (int k = 0; k < taps.Length; k++)
-        {
-            double t = fraction + halfWidth - 1 - k; // distance from the tap's input frame, in input frames
-            double x = 2 * cutoff * t;
-            double sinc = x == 0 ? 1 : Math.Sin(Math.PI * x) / (Math.PI * x);
-            double r = t / halfWidth;
-            double window = BesselI0(KaiserBeta * Math.Sqrt(Math.Max(0, 1 - r * r))) / BesselI0(KaiserBeta);
-            values[k] = sinc * window;
-            sum += values[k];
-        }
-        // Unity gain at DC for every phase, so a constant level comes out unchanged.
-        for (int k = 0; k < taps.Length; k++) taps[k] = (float)(values[k] / sum);
+        double at = fraction * PhaseCount;
+        int phase = (int)at;
+        float weight = (float)(at - phase);
+        if (weight == 0) return phases[phase];
+        var below = phases[phase];
+        var above = phases[phase + 1];
+        for (int k = 0; k < taps.Length; k++) taps[k] = below[k] + weight * (above[k] - below[k]);
         return taps;
-    }
-
-    static double BesselI0(double x)
-    {
-        double sum = 1, term = 1;
-        for (int k = 1; term > 1e-12 * sum; k++)
-        {
-            term *= x * x / (4.0 * k * k);
-            sum += term;
-        }
-        return sum;
     }
 
     void Append(ReadOnlySpan<float> input)
@@ -145,5 +143,51 @@ sealed class Resampler
         history.AsSpan(frames * channels, (historyFrames - frames) * channels).CopyTo(history);
         historyFrames -= frames;
         historyStart += frames;
+    }
+
+    /// <summary>The filter for one input rate, shared by every resampler at that rate.</summary>
+    sealed record Kernel(int HalfWidth, float[][] Phases)
+    {
+        public static Kernel For(int inputRate)
+        {
+            // Cut-off in cycles per input frame, just below the lower of the two Nyquist frequencies; right on it at
+            // 48 kHz, where there is nothing to filter out and the taps must leave the audio as it is.
+            double cutoff = inputRate == Recording.Rate ? 0.5 : 0.5 * Passband * Math.Min(1, (double)Recording.Rate / inputRate);
+            int halfWidth = (int)Math.Ceiling(ZeroCrossings / (2 * cutoff));
+            var phases = new float[PhaseCount + 1][];
+            for (int p = 0; p <= PhaseCount; p++) phases[p] = Coefficients((double)p / PhaseCount, cutoff, halfWidth);
+            return new Kernel(halfWidth, phases);
+        }
+
+        static float[] Coefficients(double fraction, double cutoff, int halfWidth)
+        {
+            var taps = new float[2 * halfWidth];
+            double sum = 0;
+            var values = new double[taps.Length];
+            for (int k = 0; k < taps.Length; k++)
+            {
+                double t = fraction + halfWidth - 1 - k; // distance from the tap's input frame, in input frames
+                double x = 2 * cutoff * t;
+                double sinc = x == 0 ? 1 : Math.Sin(Math.PI * x) / (Math.PI * x);
+                double r = t / halfWidth;
+                double window = BesselI0(KaiserBeta * Math.Sqrt(Math.Max(0, 1 - r * r))) / BesselI0(KaiserBeta);
+                values[k] = sinc * window;
+                sum += values[k];
+            }
+            // Unity gain at DC for every phase, so a constant level comes out unchanged.
+            for (int k = 0; k < taps.Length; k++) taps[k] = (float)(values[k] / sum);
+            return taps;
+        }
+
+        static double BesselI0(double x)
+        {
+            double sum = 1, term = 1;
+            for (int k = 1; term > 1e-12 * sum; k++)
+            {
+                term *= x * x / (4.0 * k * k);
+                sum += term;
+            }
+            return sum;
+        }
     }
 }

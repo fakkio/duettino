@@ -8,19 +8,30 @@ namespace Duettino.Engine;
 /// them on its timeline. All in managed code, never with Media Foundation (ADR-0003).
 /// </summary>
 /// <remarks>
-/// A Source not at 48 kHz goes through a resampler, which carries over from one packet to the next for as long as
-/// they follow on from each other; when they don't (a Gap, a device switch to another format), the audio held back
-/// by the resampler goes where the previous packet ended and resampling starts afresh at the new packet; it goes
-/// there too when the Source stays quiet until the Working file is about to be written at that point.
+/// Every packet goes through a resampler, even at 48 kHz, which carries over from one packet to the next for as long
+/// as they follow on from each other, its ratio nudged so that the Source's audio keeps up with its timestamps however
+/// its clock drifts (<see cref="DriftLoop"/>). When they don't follow on (a loss Windows reports, a jump of
+/// <see cref="Tolerance"/> or more, a Gap, a device switch to another format), the audio held back by the resampler
+/// goes where the previous packet ended and resampling starts afresh exactly at the new packet's timestamp; the
+/// held-back audio goes there too when the Source stays quiet until the Working file is about to be written at that
+/// point. A smaller jump Windows doesn't report is taken back gradually, like drift: no audio is cut out for it.
 /// Thread-safe: packets of the old and the new device may overlap while a Source switches device.
 /// </remarks>
 sealed class FormatConverter(SourceTimeline timeline)
 {
+    /// <summary>
+    /// A packet whose timestamp is less than this many frames from where the Source's audio ends carries on from it,
+    /// so timestamp jitter doesn't chop the audio and drift is taken back gradually; beyond it, audio was lost and
+    /// the packet goes exactly where its timestamp says.
+    /// </summary>
+    const int Tolerance = Recording.Rate / 100;
+
     readonly object gate = new();
     readonly int targetChannels = timeline.Channels;
+    readonly DriftLoop drift = new();
     SourceFormat? format;
-    Resampler? resampler;
-    long resamplerStart; // timeline position of the resampler's first input frame
+    Resampler? resampler; // null until a packet starts the Source's audio afresh
+    long resamplerStart;  // timeline position of the resampler's first input frame
 
     /// <summary>Converts one packet whose first frame belongs at timeline <paramref name="position"/>, and places it.</summary>
     public void Deliver(SourceFormat packetFormat, ReadOnlySpan<byte> data, PacketFlags flags, long position)
@@ -31,17 +42,27 @@ sealed class FormatConverter(SourceTimeline timeline)
         if (samples.Length == 0) return;
         lock (gate)
         {
-            if (packetFormat != format || resampler != null && Math.Abs(position - (resamplerStart + resampler.InputEnd)) >= SourceTimeline.Tolerance)
+            if (packetFormat != format)
             {
                 ReleaseHeld();
                 format = packetFormat;
-                resampler = packetFormat.SampleRate == Recording.Rate ? null : new Resampler(packetFormat.SampleRate, targetChannels);
-                resamplerStart = position;
+                drift.ForgetDrift();
+            }
+            else if (resampler != null)
+            {
+                // How far the packet's timestamp is ahead of where the Source's audio ends.
+                double lag = position - (resamplerStart + resampler.InputEnd);
+                if (flags.HasFlag(PacketFlags.DataDiscontinuity) || Math.Abs(lag) >= Tolerance)
+                    ReleaseHeld();
+                else
+                    resampler.Correction = drift.Update(lag, (double)samples.Length / targetChannels / packetFormat.SampleRate);
             }
             if (resampler == null)
-                Place(samples, position);
-            else
-                Place(resampler.Push(samples, out long start), resamplerStart + start);
+            {
+                resampler = new Resampler(packetFormat.SampleRate, targetChannels) { Correction = drift.Reanchor() };
+                resamplerStart = position;
+            }
+            Place(resampler.Push(samples, out long start), resamplerStart + start);
         }
     }
 
@@ -53,16 +74,15 @@ sealed class FormatConverter(SourceTimeline timeline)
     {
         lock (gate)
         {
-            if (resampler == null || resamplerStart + resampler.Emitted >= position) return;
-            ReleaseHeld();
-            format = null; // the next packet starts afresh
-            resampler = null;
+            if (resampler != null && resamplerStart + resampler.Emitted < position) ReleaseHeld();
         }
     }
 
+    /// <summary>Places the audio the resampler holds back where the Source's audio ends: the next packet starts afresh.</summary>
     void ReleaseHeld()
     {
         if (resampler != null) Place(resampler.Flush(out long start), resamplerStart + start);
+        resampler = null;
     }
 
     void Place(float[] samples, long position)
