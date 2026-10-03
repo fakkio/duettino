@@ -20,7 +20,8 @@ public sealed class FinalizationTests : IDisposable
     [Fact]
     public void The_Mix_carries_the_Input_on_both_sides_added_to_the_Output_and_lands_in_an_MP3_named_after_the_Working_file()
     {
-        WorkingFiles.Write(WorkingFilePath, 4800, _ => (1000, 2000, -3000));
+        // Input and Output equally loud, so Leveling gives them the same gain: the Input cancels the Output's right side.
+        WorkingFiles.Write(WorkingFilePath, 4800, _ => (1000, 1000, -1000));
         var encoder = new CapturingEncoder();
 
         var result = Finalization.Run(WorkingFilePath, encoder);
@@ -30,7 +31,8 @@ public sealed class FinalizationTests : IDisposable
         Assert.Equal(CapturingEncoder.Mp3Bytes, File.ReadAllBytes(result.RecordingFilePath));
         Assert.False(File.Exists(WorkingFilePath));
         Assert.Equal(4800 * 2, encoder.Mix.Length);
-        Assert.All(Enumerable.Range(0, 4800), i => Assert.Equal((3000, -2000), (encoder.Mix[2 * i], encoder.Mix[2 * i + 1])));
+        Assert.InRange(encoder.Mix[0], 1000, 32767);
+        Assert.All(Enumerable.Range(0, 4800), i => Assert.Equal((encoder.Mix[0], 0), (encoder.Mix[2 * i], encoder.Mix[2 * i + 1])));
     }
 
     [Fact]
@@ -52,10 +54,12 @@ public sealed class FinalizationTests : IDisposable
     }
 
     [Fact]
-    public void Both_Sources_at_full_scale_mix_without_clipping_or_wrapping_around()
+    public void Both_Sources_peaking_at_full_scale_together_mix_without_clipping_or_wrapping_around()
     {
-        // A 440 Hz sine at full scale on both Sources, in phase: their plain sum would be twice full scale.
-        static short Sine(int frame) => (short)Math.Round(32767 * Math.Sin(2 * Math.PI * 440 * frame / 48000));
+        // Short 1 kHz bursts at full scale, 5 ms every 100 ms, on both Sources in phase: peaks far above their
+        // loudness, as in speech, which Leveling leaves near full scale. Their plain sum would be twice full scale.
+        static short Sine(int frame) =>
+            frame % 4800 < 240 ? (short)Math.Round(32767 * Math.Sin(2 * Math.PI * 1000 * frame / 48000)) : (short)0;
         WorkingFiles.Write(WorkingFilePath, 2 * 48000, i => (Sine(i), Sine(i), Sine(i)));
         var encoder = new CapturingEncoder();
 
@@ -64,7 +68,7 @@ public sealed class FinalizationTests : IDisposable
         var mix = encoder.Mix;
         int peak = mix.Max(s => Math.Abs((int)s));
         Assert.InRange(peak, 16384, 31128); // loud, yet at least 0.5 dB below full scale
-        Assert.True(mix.Count(s => Math.Abs((int)s) == peak) < mix.Length / 20, "the waveform is flattened at its peak");
+        Assert.True(mix.Count(s => Math.Abs((int)s) == peak) < mix.Count(s => s != 0) / 20, "the waveform is flattened at its peak");
         Assert.All(Enumerable.Range(0, mix.Length / 2), i =>
         {
             int sign = Math.Sign(Sine(i));
@@ -89,7 +93,7 @@ public sealed class FinalizationTests : IDisposable
     [Fact]
     public void Without_an_MP3_encoder_the_Recording_file_is_the_Mix_as_a_stereo_WAV()
     {
-        WorkingFiles.Write(WorkingFilePath, 4800, _ => (1000, 2000, -3000));
+        WorkingFiles.Write(WorkingFilePath, 4800, _ => (1000, 1000, -1000));
 
         var result = Finalization.Run(WorkingFilePath, new UnavailableEncoder());
 
@@ -99,7 +103,8 @@ public sealed class FinalizationTests : IDisposable
         var wav = WavFile.Read(result.RecordingFilePath);
         Assert.Equal((48000, 16, 2), (wav.Format.SampleRate, wav.Format.BitsPerSample, wav.Format.Channels));
         Assert.Equal(4800 * 2, wav.Samples.Length);
-        Assert.All(Enumerable.Range(0, 4800), i => Assert.Equal((3000, -2000), (wav.Samples[2 * i], wav.Samples[2 * i + 1])));
+        Assert.InRange(wav.Samples[0], 1000, 32767);
+        Assert.All(Enumerable.Range(0, 4800), i => Assert.Equal((wav.Samples[0], 0), (wav.Samples[2 * i], wav.Samples[2 * i + 1])));
     }
 
     [Fact]

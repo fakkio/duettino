@@ -4,8 +4,9 @@ namespace Duettino.Engine;
 
 /// <summary>
 /// The Mix of a Working file, computed as it is read: raw 16-bit stereo 48 kHz PCM, the Input on both sides added to
-/// the Output. The sum can reach twice full scale (the Loopback capture reaches 0 dBFS), so a <see cref="Limiter"/>
-/// keeps it under a ceiling with some headroom: no clipping, no wrap-around (ADR-0004).
+/// the Output, each Leveled first (<see cref="Leveling"/>, measured over the whole Working file before the first read).
+/// The sum can reach twice full scale (the Loopback capture reaches 0 dBFS, and Leveling targets loudness, not peaks),
+/// so a <see cref="Limiter"/> keeps it under a ceiling with some headroom: no clipping, no wrap-around (ADR-0004).
 /// </summary>
 sealed class MixStream : Stream
 {
@@ -13,13 +14,16 @@ sealed class MixStream : Stream
     const int ChunkFrames = 4096;
 
     readonly WorkingFileReader reader;
+    readonly Leveling leveling;
     readonly Limiter limiter = new();
     readonly short[] workingChunk = new short[ChunkFrames * WorkingFileReader.Channels];
     int delayedFrames = Limiter.Delay;
+    long framesIn;
     long position;
 
     public MixStream(string workingFilePath)
     {
+        leveling = Leveling.Measure(workingFilePath);
         reader = new WorkingFileReader(workingFilePath);
     }
 
@@ -53,8 +57,11 @@ sealed class MixStream : Stream
             for (int i = 0; i < frames; i++)
             {
                 var frame = workingChunk.AsSpan(i * WorkingFileReader.Channels, WorkingFileReader.Channels);
-                float input = frame[0] / 32768f;
-                var (left, right) = limiter.Process(input + frame[1] / 32768f, input + frame[2] / 32768f);
+                float input = frame[0] / 32768f * leveling.Input.At(framesIn), outputGain = leveling.Output.At(framesIn);
+                framesIn++;
+                var (left, right) = limiter.Process(
+                    input + frame[1] / 32768f * outputGain,
+                    input + frame[2] / 32768f * outputGain);
                 if (delayedFrames > 0)
                 {
                     delayedFrames--;

@@ -9,11 +9,11 @@ namespace Duettino.Engine;
 /// </param>
 public sealed record FinalizationResult(string RecordingFilePath, bool IsWav);
 
-/// <summary>Turns a Working file into a Recording file: Mix, encoding, then removing the Working file (ADR-0004).</summary>
+/// <summary>Turns a Working file into a Recording file: Leveling, Mix, encoding, then removing the Working file (ADR-0004).</summary>
 public static class Finalization
 {
     /// <summary>
-    /// Mixes the Working file at <paramref name="workingFilePath"/> and encodes it next to it, named after it
+    /// Levels and mixes the Working file at <paramref name="workingFilePath"/> and encodes it next to it, named after it
     /// (<c>X.working.wav</c> → <c>X.mp3</c>, or <c>X_2.mp3</c>… if taken), then deletes the Working file.
     /// Without an MP3 encoder the Recording file is a stereo WAV (<c>X.wav</c>) instead (ADR-0003).
     /// If this fails, the Working file is kept and no partial Recording file is left behind.
