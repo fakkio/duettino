@@ -93,4 +93,42 @@
     <value>Couldn't open {0}: {1}</value>
     <comment>{0}: the destination folder; {1}: the error message.</comment>
   </data>
+  <data name="RecoveryHeading" xml:space="preserve">
+    <value>A Recording wasn't saved</value>
+    <comment>Heading of the startup prompt for an Orphan Working file.</comment>
+  </data>
+  <data name="RecoveryText" xml:space="preserve">
+    <value>{0} ({1}) was left unfinished, probably because Duettino or Windows closed while recording.</value>
+    <comment>{0}: file name of the Orphan Working file; {1}: its length (h:mm:ss) or RecoveryLengthUnknown.</comment>
+  </data>
+  <data name="RecoveryLengthUnknown" xml:space="preserve">
+    <value>length unknown</value>
+    <comment>Stands for the length of an Orphan Working file that can't be read.</comment>
+  </data>
+  <data name="RecoverButton" xml:space="preserve">
+    <value>Recover</value>
+  </data>
+  <data name="RecoverDescription" xml:space="preserve">
+    <value>Save it as a Recording file, as Stop does</value>
+  </data>
+  <data name="DeleteButton" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="DeleteDescription" xml:space="preserve">
+    <value>Throw it away (into the Recycle Bin, where Windows keeps one)</value>
+  </data>
+  <data name="LaterButton" xml:space="preserve">
+    <value>Later</value>
+  </data>
+  <data name="LaterDescription" xml:space="preserve">
+    <value>Keep it and ask again next time Duettino starts</value>
+  </data>
+  <data name="CannotFindOrphans" xml:space="preserve">
+    <value>Couldn't look for unfinished Recordings in {0}: {1}</value>
+    <comment>{0}: the destination folder; {1}: the error message.</comment>
+  </data>
+  <data name="CannotDelete" xml:space="preserve">
+    <value>Couldn't delete {0}: {1}</value>
+    <comment>{0}: path of the Orphan Working file; {1}: the error message.</comment>
+  </data>
 </root>

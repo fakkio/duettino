@@ -4,6 +4,7 @@ using Duettino.Devices;
 using Duettino.Engine;
 using Duettino.Resources;
 using Duettino.Selection;
+using Microsoft.VisualBasic.FileIO;
 
 namespace Duettino;
 
@@ -92,6 +93,12 @@ sealed class MainForm : Form
 
         SelectSources();
         ShowFolder();
+    }
+
+    protected override async void OnShown(EventArgs e)
+    {
+        base.OnShown(e);
+        await OfferRecovery();
     }
 
     protected override void Dispose(bool disposing)
@@ -281,7 +288,7 @@ sealed class MainForm : Form
         {
             await stopping.StopAsync();
             elapsed.Text = FormatElapsed(stopping.Elapsed);
-            await FinalizeRecording(stopping.WorkingFilePath);
+            notice.Text = await FinalizeRecording(stopping.WorkingFilePath);
         }
         catch (Exception ex)
         {
@@ -293,17 +300,115 @@ sealed class MainForm : Form
         recordButton.Enabled = true;
     }
 
-    /// <summary>Turns the Working file into the Recording file off the UI thread, then says how it went.</summary>
-    async Task FinalizeRecording(string workingFilePath)
+    /// <summary>Turns the Working file into the Recording file off the UI thread; returns the notice saying how it went.</summary>
+    static async Task<string> FinalizeRecording(string workingFilePath)
     {
         try
         {
             var result = await Task.Run(() => Finalization.Run(workingFilePath, new MediaFoundationMp3Encoder()));
-            notice.Text = string.Format(result.IsWav ? Strings.SavedAsWav : Strings.Saved, result.RecordingFilePath);
+            return string.Format(result.IsWav ? Strings.SavedAsWav : Strings.Saved, result.RecordingFilePath);
         }
         catch (Exception ex)
         {
-            notice.Text = string.Format(Strings.CannotFinalize, ex.Message, workingFilePath);
+            return string.Format(Strings.CannotFinalize, ex.Message, workingFilePath);
+        }
+    }
+
+    /// <summary>
+    /// Asks what to do with each Orphan Working file in the destination folder (Recover, Delete or Later), then
+    /// finalizes the ones to recover, one after the other, with Record locked as during any Finalization.
+    /// One with no audio at all holds nothing to recover: it is deleted without asking.
+    /// </summary>
+    async Task OfferRecovery()
+    {
+        IReadOnlyList<OrphanWorkingFile> orphans;
+        try
+        {
+            orphans = Recovery.FindOrphans(settings.Folder);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            notice.Text = string.Format(Strings.CannotFindOrphans, settings.Folder, ex.Message);
+            return;
+        }
+
+        var toRecover = new List<string>();
+        var notices = new List<string>();
+        foreach (var orphan in orphans)
+        {
+            if (orphan.Length == TimeSpan.Zero)
+            {
+                DeleteEmpty(orphan.Path);
+                continue;
+            }
+            switch (AskAboutOrphan(orphan))
+            {
+                case RecoveryChoice.Recover:
+                    toRecover.Add(orphan.Path);
+                    break;
+                case RecoveryChoice.Delete:
+                    if (MoveToRecycleBin(orphan.Path) is { } error) notices.Add(error);
+                    break;
+            }
+        }
+        if (toRecover.Count > 0)
+        {
+            recordButton.Enabled = false;
+            changeFolderButton.Enabled = false;
+            notice.Text = Strings.SavingNotice;
+            foreach (var path in toRecover) notices.Add(await FinalizeRecording(path));
+            changeFolderButton.Enabled = true;
+            recordButton.Enabled = true;
+        }
+        notice.Text = string.Join(Environment.NewLine, notices);
+    }
+
+    enum RecoveryChoice { Recover, Delete, Later }
+
+    RecoveryChoice AskAboutOrphan(OrphanWorkingFile orphan)
+    {
+        var recover = new TaskDialogCommandLinkButton(Strings.RecoverButton, Strings.RecoverDescription);
+        var delete = new TaskDialogCommandLinkButton(Strings.DeleteButton, Strings.DeleteDescription);
+        var later = new TaskDialogCommandLinkButton(Strings.LaterButton, Strings.LaterDescription);
+        var length = orphan.Length is { } known ? FormatElapsed(known) : Strings.RecoveryLengthUnknown;
+        var page = new TaskDialogPage
+        {
+            Caption = Strings.AppTitle,
+            Heading = Strings.RecoveryHeading,
+            Text = string.Format(Strings.RecoveryText, Path.GetFileName(orphan.Path), length),
+            Icon = TaskDialogIcon.Warning,
+            Buttons = { recover, delete, later },
+            DefaultButton = recover,
+            // Closing the dialog decides nothing: the file is offered again at the next launch.
+            AllowCancel = true,
+        };
+        var clicked = TaskDialog.ShowDialog(this, page);
+        return clicked == recover ? RecoveryChoice.Recover : clicked == delete ? RecoveryChoice.Delete : RecoveryChoice.Later;
+    }
+
+    static void DeleteEmpty(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Only a few bytes: it is tried again at the next launch.
+        }
+    }
+
+    /// <summary>Deletes the file into the Recycle Bin, so a wrong click can be undone; returns the notice if it couldn't.</summary>
+    static string? MoveToRecycleBin(string path)
+    {
+        try
+        {
+            FileSystem.DeleteFile(path, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
+            return null;
+        }
+        catch (Exception ex)
+        {
+            return string.Format(Strings.CannotDelete, path, ex.Message);
         }
     }
 }

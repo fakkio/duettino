@@ -88,4 +88,37 @@
   <data name="CannotOpenFolder" xml:space="preserve">
     <value>Impossibile aprire {0}: {1}</value>
   </data>
+  <data name="RecoveryHeading" xml:space="preserve">
+    <value>Una registrazione non è stata salvata</value>
+  </data>
+  <data name="RecoveryText" xml:space="preserve">
+    <value>{0} ({1}) è rimasto incompleto, probabilmente perché Duettino o Windows si sono chiusi durante la registrazione.</value>
+  </data>
+  <data name="RecoveryLengthUnknown" xml:space="preserve">
+    <value>durata sconosciuta</value>
+  </data>
+  <data name="RecoverButton" xml:space="preserve">
+    <value>Recupera</value>
+  </data>
+  <data name="RecoverDescription" xml:space="preserve">
+    <value>Salvalo come file della registrazione, come fa Stop</value>
+  </data>
+  <data name="DeleteButton" xml:space="preserve">
+    <value>Elimina</value>
+  </data>
+  <data name="DeleteDescription" xml:space="preserve">
+    <value>Buttalo via (nel Cestino, dove Windows ne tiene uno)</value>
+  </data>
+  <data name="LaterButton" xml:space="preserve">
+    <value>Più tardi</value>
+  </data>
+  <data name="LaterDescription" xml:space="preserve">
+    <value>Tienilo e chiedimelo di nuovo al prossimo avvio di Duettino</value>
+  </data>
+  <data name="CannotFindOrphans" xml:space="preserve">
+    <value>Impossibile cercare registrazioni incomplete in {0}: {1}</value>
+  </data>
+  <data name="CannotDelete" xml:space="preserve">
+    <value>Impossibile eliminare {0}: {1}</value>
+  </data>
 </root>
