@@ -4,7 +4,15 @@
     <OutputType>WinExe</OutputType>
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <!-- The UI follows the Windows display language: Strings.resx is English, the fallback for every language but Italian. -->
+    <NeutralLanguage>en</NeutralLanguage>
+    <!-- Only the languages the UI speaks: keeps other languages' framework satellites out of the build. -->
+    <SatelliteResourceLanguages>en;it</SatelliteResourceLanguages>
   </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Duettino.Tests" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Duettino.Engine\Duettino.Engine.csproj" />

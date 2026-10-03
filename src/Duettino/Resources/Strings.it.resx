@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Italian UI strings. Every key in Strings.resx has its translation here (LocalizationTests checks it).
+  Glossary terms in Italian, as in the original Italian brief:
+    Input → Ingresso, Output → Uscita, Recording → registrazione, Recording file → file della registrazione,
+    Working file → file di lavoro.
+  Ingresso is masculine and Uscita feminine: phrase sentences with {0} = Ingresso/Uscita so no word agrees with it.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AppTitle" xml:space="preserve">
+    <value>Duettino</value>
+  </data>
+  <data name="InputLabel" xml:space="preserve">
+    <value>Ingresso:</value>
+  </data>
+  <data name="OutputLabel" xml:space="preserve">
+    <value>Uscita:</value>
+  </data>
+  <data name="Input" xml:space="preserve">
+    <value>Ingresso</value>
+  </data>
+  <data name="Output" xml:space="preserve">
+    <value>Uscita</value>
+  </data>
+  <data name="RecordButton" xml:space="preserve">
+    <value>● Registra</value>
+  </data>
+  <data name="StopButton" xml:space="preserve">
+    <value>■ Stop</value>
+  </data>
+  <data name="NoDevice" xml:space="preserve">
+    <value>(nessun dispositivo: si registra il silenzio)</value>
+  </data>
+  <data name="RecordingNotice" xml:space="preserve">
+    <value>Registrazione in corso…</value>
+  </data>
+  <data name="SavingNotice" xml:space="preserve">
+    <value>Salvataggio in corso…</value>
+  </data>
+  <data name="Saved" xml:space="preserve">
+    <value>File salvato: {0}</value>
+  </data>
+  <data name="SavedAsWav" xml:space="preserve">
+    <value>File salvato in formato WAV: {0}. Questa edizione di Windows non ha l'encoder MP3: per salvare in MP3, installa il Media Feature Pack (Impostazioni › App › Funzionalità facoltative › Aggiungi una funzionalità).</value>
+  </data>
+  <data name="CannotFinalize" xml:space="preserve">
+    <value>Impossibile salvare il file della registrazione: {0} La registrazione non mixata è stata conservata in {1}</value>
+  </data>
+  <data name="CannotStart" xml:space="preserve">
+    <value>Impossibile avviare la registrazione: {0}</value>
+  </data>
+  <data name="CannotStop" xml:space="preserve">
+    <value>La registrazione si è interrotta per un errore: {0}</value>
+  </data>
+  <data name="SourceFailed" xml:space="preserve">
+    <value>{0}: da ora in poi si registra il silenzio ({1})</value>
+  </data>
+</root>
