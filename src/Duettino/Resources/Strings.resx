@@ -68,4 +68,29 @@
     <value>{0} is recorded as silence from now on: {1}</value>
     <comment>{0}: Input or Output; {1}: the error message.</comment>
   </data>
+  <data name="InputFallback" xml:space="preserve">
+    <value>Your Input, {0}, isn't connected: recording the Windows default, {1}, in its place.</value>
+    <comment>Notice when the remembered Input is absent. {0}: name of the remembered Input; {1}: name of the Windows default Input.</comment>
+  </data>
+  <data name="OutputFallback" xml:space="preserve">
+    <value>Your Output, {0}, isn't connected: recording the Windows default, {1}, in its place.</value>
+    <comment>Notice when the remembered Output is absent. {0}: name of the remembered Output; {1}: name of the Windows default Output.</comment>
+  </data>
+  <data name="FolderLabel" xml:space="preserve">
+    <value>Save to:</value>
+  </data>
+  <data name="ChangeFolderButton" xml:space="preserve">
+    <value>Change…</value>
+  </data>
+  <data name="OpenFolderButton" xml:space="preserve">
+    <value>Open folder</value>
+  </data>
+  <data name="ChooseFolder" xml:space="preserve">
+    <value>Choose where to save Recording files</value>
+    <comment>Title of the destination folder picker.</comment>
+  </data>
+  <data name="CannotOpenFolder" xml:space="preserve">
+    <value>Couldn't open {0}: {1}</value>
+    <comment>{0}: the destination folder; {1}: the error message.</comment>
+  </data>
 </root>

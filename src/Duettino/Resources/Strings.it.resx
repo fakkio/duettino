@@ -67,4 +67,25 @@
   <data name="SourceFailed" xml:space="preserve">
     <value>{0}: da ora in poi si registra il silenzio ({1})</value>
   </data>
+  <data name="InputFallback" xml:space="preserve">
+    <value>L'ingresso scelto, {0}, non è collegato: al suo posto si registra quello predefinito di Windows, {1}.</value>
+  </data>
+  <data name="OutputFallback" xml:space="preserve">
+    <value>L'uscita scelta, {0}, non è collegata: al suo posto si registra quella predefinita di Windows, {1}.</value>
+  </data>
+  <data name="FolderLabel" xml:space="preserve">
+    <value>Salva in:</value>
+  </data>
+  <data name="ChangeFolderButton" xml:space="preserve">
+    <value>Cambia…</value>
+  </data>
+  <data name="OpenFolderButton" xml:space="preserve">
+    <value>Apri cartella</value>
+  </data>
+  <data name="ChooseFolder" xml:space="preserve">
+    <value>Scegli dove salvare le registrazioni</value>
+  </data>
+  <data name="CannotOpenFolder" xml:space="preserve">
+    <value>Impossibile aprire {0}: {1}</value>
+  </data>
 </root>
