@@ -487,4 +487,34 @@ public sealed class RecordingTests : IDisposable
         RunUntil(recording, 1300); // 1.05 s written, header updated at 1 s
         Assert.Equal(48000, WorkingFile.Read(recording.WorkingFilePath).Frames);
     }
+
+    [Fact]
+    public void Each_Source_reports_the_peak_of_what_it_delivered_since_the_last_reading()
+    {
+        using var recording = Start();
+        DeliverTone(recording, Source.Input, Packets.MonoFloat, 0, [0, 10], 440, amplitude: 0.5);
+        DeliverTone(recording, Source.Output, Packets.StereoFloat, 20, [0], 440, amplitude: 0.25);
+
+        Assert.InRange(recording.TakePeak(Source.Input), 0.49f, 0.5f);
+        Assert.InRange(recording.TakePeak(Source.Output), 0.24f, 0.25f);
+
+        // Nothing delivered since: the meters fall to silence.
+        Assert.Equal(0f, recording.TakePeak(Source.Input));
+        Assert.Equal(0f, recording.TakePeak(Source.Output));
+    }
+
+    [Fact]
+    public void The_elapsed_time_follows_the_clock_and_stops_at_Stop()
+    {
+        using var recording = Start();
+        Assert.Equal(TimeSpan.Zero, recording.Elapsed);
+
+        RunUntil(recording, 1500);
+        Assert.Equal(TimeSpan.FromMilliseconds(1500), recording.Elapsed);
+
+        recording.Stop();
+        clock.AdvanceMs(SafetyLatencyMs);
+        recording.Advance();
+        Assert.Equal(TimeSpan.FromMilliseconds(1500), recording.Elapsed);
+    }
 }

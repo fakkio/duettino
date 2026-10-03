@@ -27,11 +27,13 @@ sealed class FormatConverter(SourceTimeline timeline)
     const int Tolerance = Recording.Rate / 100;
 
     readonly object gate = new();
+    readonly object peakGate = new();
     readonly int targetChannels = timeline.Channels;
     readonly DriftLoop drift = new();
     SourceFormat? format;
     Resampler? resampler; // null until a packet starts the Source's audio afresh
     long resamplerStart;  // timeline position of the resampler's first input frame
+    float peak;
 
     /// <summary>Converts one packet whose first frame belongs at timeline <paramref name="position"/>, and places it.</summary>
     public void Deliver(SourceFormat packetFormat, ReadOnlySpan<byte> data, PacketFlags flags, long position)
@@ -40,6 +42,9 @@ sealed class FormatConverter(SourceTimeline timeline)
         // An empty packet carries no audio, and its timestamp can be garbage (NAudio hands one over, stamped 0, after
         // every real packet): placing it would lose track of where the Source's audio ends.
         if (samples.Length == 0) return;
+        float packetPeak = 0;
+        foreach (var sample in samples) packetPeak = Math.Max(packetPeak, Math.Abs(sample));
+        lock (peakGate) peak = Math.Max(peak, packetPeak);
         lock (gate)
         {
             if (packetFormat != format)
@@ -63,6 +68,17 @@ sealed class FormatConverter(SourceTimeline timeline)
                 resamplerStart = position;
             }
             Place(resampler.Push(samples, out long start), resamplerStart + start);
+        }
+    }
+
+    /// <summary>The highest absolute sample delivered since the last call, in the target channels; 0 if none.</summary>
+    public float TakePeak()
+    {
+        lock (peakGate)
+        {
+            float taken = peak;
+            peak = 0;
+            return taken;
         }
     }
 

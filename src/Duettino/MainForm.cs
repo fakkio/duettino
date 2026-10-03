@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using Duettino.Devices;
 using Duettino.Engine;
 using Duettino.Resources;
@@ -17,6 +18,8 @@ sealed class MainForm : Form
     readonly WindowsDeviceCatalogue catalogue;
     readonly System.Windows.Forms.Timer deviceRefresh = new() { Interval = DeviceRefreshDelayMs };
     readonly Dictionary<Source, ComboBox> lists = Sources.ToDictionary(s => s, _ => DeviceList());
+    readonly Dictionary<Source, LevelMeter> meters = Sources.ToDictionary(s => s, _ => Meter());
+    readonly System.Windows.Forms.Timer meterRefresh = new() { Interval = LevelMeter.RefreshIntervalMs };
     readonly Label deviceNotice = NoticeLabel();
     readonly Label folderPath = new()
     {
@@ -25,6 +28,10 @@ sealed class MainForm : Form
     readonly Button changeFolderButton = SmallButton(Strings.ChangeFolderButton);
     readonly Button openFolderButton = SmallButton(Strings.OpenFolderButton);
     readonly Button recordButton = new() { AutoSize = true, Padding = new Padding(12, 4, 12, 4), Anchor = AnchorStyles.Left };
+    readonly Label elapsed = new()
+    {
+        Text = FormatElapsed(TimeSpan.Zero), AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(12, 3, 3, 3),
+    };
     readonly Label notice = NoticeLabel();
     readonly ToolTip toolTip = new();
     Settings settings = Settings.Load(Settings.DefaultPath);
@@ -43,18 +50,22 @@ sealed class MainForm : Form
 
         var folderButtons = new FlowLayoutPanel { AutoSize = true, Margin = Padding.Empty };
         folderButtons.Controls.AddRange([changeFolderButton, openFolderButton]);
+        var recordRow = new FlowLayoutPanel { AutoSize = true, Margin = Padding.Empty };
+        recordRow.Controls.AddRange([recordButton, elapsed]);
 
         var layout = new TableLayoutPanel { AutoSize = true, ColumnCount = 2, Dock = DockStyle.Fill };
         layout.Controls.Add(FieldLabel(Strings.InputLabel), 0, 0);
         layout.Controls.Add(lists[Source.Input], 1, 0);
-        layout.Controls.Add(FieldLabel(Strings.OutputLabel), 0, 1);
-        layout.Controls.Add(lists[Source.Output], 1, 1);
-        layout.Controls.Add(deviceNotice, 1, 2);
-        layout.Controls.Add(FieldLabel(Strings.FolderLabel), 0, 3);
-        layout.Controls.Add(folderPath, 1, 3);
-        layout.Controls.Add(folderButtons, 1, 4);
-        layout.Controls.Add(recordButton, 1, 5);
-        layout.Controls.Add(notice, 0, 6);
+        layout.Controls.Add(meters[Source.Input], 1, 1);
+        layout.Controls.Add(FieldLabel(Strings.OutputLabel), 0, 2);
+        layout.Controls.Add(lists[Source.Output], 1, 2);
+        layout.Controls.Add(meters[Source.Output], 1, 3);
+        layout.Controls.Add(deviceNotice, 1, 4);
+        layout.Controls.Add(FieldLabel(Strings.FolderLabel), 0, 5);
+        layout.Controls.Add(folderPath, 1, 5);
+        layout.Controls.Add(folderButtons, 1, 6);
+        layout.Controls.Add(recordRow, 1, 7);
+        layout.Controls.Add(notice, 0, 8);
         layout.SetColumnSpan(notice, 2);
         Controls.Add(layout);
 
@@ -64,6 +75,7 @@ sealed class MainForm : Form
             list.SelectionChangeCommitted += (_, _) => Choose(source, list.SelectedItem as AudioEndpoint);
         changeFolderButton.Click += (_, _) => ChangeFolder();
         openFolderButton.Click += (_, _) => OpenFolder();
+        meterRefresh.Tick += (_, _) => ShowLevels();
 
         catalogue = new WindowsDeviceCatalogue();
         catalogue.Changed += () =>
@@ -88,6 +100,7 @@ sealed class MainForm : Form
         {
             catalogue.Dispose();
             deviceRefresh.Dispose();
+            meterRefresh.Dispose();
             toolTip.Dispose();
         }
         base.Dispose(disposing);
@@ -95,6 +108,13 @@ sealed class MainForm : Form
 
     static ComboBox DeviceList() =>
         new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 320, Anchor = AnchorStyles.Left | AnchorStyles.Right };
+
+    static LevelMeter Meter() =>
+        new() { Width = 320, Height = 6, Anchor = AnchorStyles.Left | AnchorStyles.Right, Margin = new Padding(3, 0, 3, 6) };
+
+    /// <summary>The timer's text: hours, minutes and whole seconds, the hours going past 24 if need be.</summary>
+    internal static string FormatElapsed(TimeSpan time) =>
+        string.Format(CultureInfo.InvariantCulture, "{0}:{1:00}:{2:00}", (int)time.TotalHours, time.Minutes, time.Seconds);
 
     static Label FieldLabel(string text) =>
         new() { Text = text, AutoSize = true, Anchor = AnchorStyles.Left };
@@ -234,17 +254,33 @@ sealed class MainForm : Form
         changeFolderButton.Enabled = false;
         recordButton.Text = Strings.StopButton;
         notice.Text = Strings.RecordingNotice;
+        elapsed.Text = FormatElapsed(TimeSpan.Zero);
+        meterRefresh.Start();
+    }
+
+    /// <summary>
+    /// Moves the meters and the timer. They only run while recording: the Input is opened at Record, so Windows shows
+    /// the "microphone in use" indicator only then.
+    /// </summary>
+    void ShowLevels()
+    {
+        if (recorder == null) return;
+        foreach (var (source, meter) in meters) meter.ShowPeak(recorder.TakePeak(source));
+        elapsed.Text = FormatElapsed(recorder.Elapsed);
     }
 
     async Task StopRecording()
     {
         var stopping = recorder!;
+        meterRefresh.Stop();
+        foreach (var meter in meters.Values) meter.Reset();
         recordButton.Enabled = false;
         recordButton.Text = Strings.RecordButton;
         notice.Text = Strings.SavingNotice;
         try
         {
             await stopping.StopAsync();
+            elapsed.Text = FormatElapsed(stopping.Elapsed);
             await FinalizeRecording(stopping.WorkingFilePath);
         }
         catch (Exception ex)

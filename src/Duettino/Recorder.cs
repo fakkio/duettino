@@ -28,6 +28,12 @@ sealed class Recorder
 
     public string WorkingFilePath => recording.WorkingFilePath;
 
+    /// <inheritdoc cref="Recording.Elapsed"/>
+    public TimeSpan Elapsed => recording.Elapsed;
+
+    /// <inheritdoc cref="Recording.TakePeak"/>
+    public float TakePeak(Source source) => recording.TakePeak(source);
+
     /// <summary>
     /// Opens a capture on each chosen endpoint and starts recording into <paramref name="folder"/>.
     /// A Source with no endpoint is recorded as silence.

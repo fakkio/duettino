@@ -32,6 +32,7 @@ public sealed class Recording : IDisposable
     long writtenFrames;
     long flushedFrames;
     long? endFrame;
+    long stopTicks = long.MaxValue; // when Stop was called; read without the gate, so Elapsed never waits on a write
     bool closed;
 
     Recording(string folder, IClock clock)
@@ -54,6 +55,9 @@ public sealed class Recording : IDisposable
     /// <summary>The Working file: WAV, 48 kHz, 16-bit, 3 channels (Input mono, then Output stereo).</summary>
     public string WorkingFilePath { get; }
 
+    /// <summary>How long the Recording has been running, by its clock; it stops growing at <see cref="Stop"/>.</summary>
+    public TimeSpan Elapsed => TimeSpan.FromTicks(Math.Min(clock.Now, Interlocked.Read(ref stopTicks)) - startTicks);
+
     /// <summary>True once the Recording was stopped and the Working file written up to the Stop time and closed.</summary>
     public bool IsCompleted { get; private set; }
 
@@ -63,9 +67,14 @@ public sealed class Recording : IDisposable
     /// </summary>
     public void Deliver(Source source, SourceFormat format, ReadOnlySpan<byte> data, long captureTime, PacketFlags flags = PacketFlags.None)
     {
-        var converter = source == Source.Input ? inputConverter : outputConverter;
-        converter.Deliver(format, data, flags, FrameAt(captureTime));
+        Converter(source).Deliver(format, data, flags, FrameAt(captureTime));
     }
+
+    /// <summary>
+    /// The peak level of <paramref name="source"/> for its meter: the highest absolute sample (full scale is 1) it
+    /// delivered since the last call, or 0 if it delivered nothing.
+    /// </summary>
+    public float TakePeak(Source source) => Converter(source).TakePeak();
 
     /// <summary>Writes the Working file up to the safety latency behind the clock. Call it every few milliseconds.</summary>
     public void Advance()
@@ -97,7 +106,13 @@ public sealed class Recording : IDisposable
     /// </summary>
     public void Stop()
     {
-        lock (gate) endFrame ??= FrameAt(clock.Now);
+        lock (gate)
+        {
+            if (endFrame != null) return;
+            long now = clock.Now;
+            Interlocked.Exchange(ref stopTicks, now);
+            endFrame = FrameAt(now);
+        }
     }
 
     /// <summary>Closes the Working file at once, keeping what has been written so far.</summary>
@@ -105,6 +120,8 @@ public sealed class Recording : IDisposable
     {
         lock (gate) Close();
     }
+
+    FormatConverter Converter(Source source) => source == Source.Input ? inputConverter : outputConverter;
 
     long FrameAt(long ticks) => (long)Math.Round((ticks - startTicks) * (double)Rate / TimeSpan.TicksPerSecond);
 
