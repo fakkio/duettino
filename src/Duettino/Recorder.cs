@@ -5,28 +5,38 @@ namespace Duettino;
 
 /// <summary>
 /// Runs one Recording against real devices: a capture per Source feeding the Recording, and a pacer thread that
-/// lets the Recording write its Working file as the clock advances.
+/// lets the Recording write its Working file as the clock advances. A Source can switch endpoint mid-Recording
+/// (Fallback, return): the Recording places each packet by its timestamp whichever device it came from.
 /// </summary>
 sealed class Recorder
 {
     const int PacerIntervalMs = 10;
 
     readonly Recording recording;
-    readonly List<SourceCapture> captures;
+    readonly Dictionary<Source, SourceCapture?> captures; // guarded by itself
     readonly Thread pacer;
     readonly TaskCompletionSource completed = new(TaskCreationOptions.RunContinuationsAsynchronously);
-    int capturesDisposed;
+    bool capturesDisposed;
     volatile bool abandoned;
 
-    Recorder(Recording recording, List<SourceCapture> captures)
+    Recorder(Recording recording)
     {
         this.recording = recording;
-        this.captures = captures;
+        captures = new() { [Source.Input] = null, [Source.Output] = null };
         pacer = new Thread(Pace) { IsBackground = true, Priority = ThreadPriority.AboveNormal, Name = "Duettino pacer" };
     }
 
-    /// <summary>Raised from a capture thread when a Source stops delivering audio; it is recorded as silence from then on.</summary>
-    public event Action<Source, Exception>? SourceFailed;
+    /// <summary>
+    /// Raised, from any thread, when a Source's capture stops or can't be opened (a <see cref="CaptureError.Unavailable"/>
+    /// or <see cref="CaptureError.AccessDenied"/>): the Source is recorded as silence until <see cref="Switch"/> opens it again.
+    /// </summary>
+    public event Action<Source, CaptureError>? SourceLost;
+
+    /// <summary>
+    /// Raised, from any thread, when the Recording can't go on: an unrecoverable capture error, or the Working file
+    /// can't be written. Stop it: <see cref="StopAsync"/> then completes, with that error if the Working file was closed.
+    /// </summary>
+    public event Action<Exception>? Failed;
 
     public string WorkingFilePath => recording.WorkingFilePath;
 
@@ -37,38 +47,74 @@ sealed class Recorder
     public float TakePeak(Source source) => recording.TakePeak(source);
 
     /// <summary>
-    /// Opens a capture on each chosen endpoint and starts recording into <paramref name="folder"/>.
-    /// A Source with no endpoint is recorded as silence.
+    /// Opens the Working file in <paramref name="folder"/>, the Recording's clock starting now. Subscribe to the events,
+    /// then <see cref="Start"/> at once: no Source is captured before.
     /// </summary>
-    public static Recorder Start(string? inputId, string? outputId, string folder)
+    public static Recorder Create(string folder) =>
+        new(Recording.Start(folder, new SystemClock()));
+
+    /// <summary>
+    /// Starts recording, each Source from its endpoint (none: silence). A Source that can't be opened is recorded as
+    /// silence, and <see cref="SourceLost"/> or <see cref="Failed"/> says why, as for <see cref="Switch"/>.
+    /// </summary>
+    public void Start(string? inputId, string? outputId)
     {
-        var captures = new List<SourceCapture>();
-        Recording? recording = null;
+        pacer.Start();
+        Switch(Source.Input, inputId);
+        Switch(Source.Output, outputId);
+    }
+
+    /// <summary>
+    /// Moves <paramref name="source"/> to <paramref name="endpointId"/> (none: silence), closing its current capture.
+    /// If the endpoint can't be opened, the Source records silence and <see cref="SourceLost"/> is raised, at once on
+    /// this thread; <see cref="Failed"/> instead if the error is <see cref="CaptureError.Unrecoverable"/>.
+    /// </summary>
+    public void Switch(Source source, string? endpointId)
+    {
+        SourceCapture? old;
+        lock (captures)
+        {
+            if (capturesDisposed) return;
+            old = captures[source];
+            captures[source] = null;
+        }
+        old?.Dispose();
+        if (endpointId == null) return;
+
+        SourceCapture? capture = null;
         try
         {
-            if (inputId != null) captures.Add(new SourceCapture(Source.Input, inputId));
-            if (outputId != null) captures.Add(new SourceCapture(Source.Output, outputId));
-            recording = Recording.Start(folder, new SystemClock());
-            var recorder = new Recorder(recording, captures);
-            foreach (var capture in captures)
+            capture = new SourceCapture(source, endpointId);
+            capture.Failed += OnCaptureFailed;
+            lock (captures)
             {
-                capture.Failed += (source, ex) => recorder.SourceFailed?.Invoke(source, ex);
-                capture.Start(recording);
+                if (capturesDisposed) throw new ObjectDisposedException(nameof(Recorder));
+                captures[source] = capture;
             }
-            recorder.pacer.Start();
-            return recorder;
+            capture.Start(recording);
         }
-        catch
+        catch (ObjectDisposedException)
         {
-            foreach (var capture in captures) capture.Dispose();
-            if (recording != null)
-            {
-                // Nothing worth keeping was recorded yet: don't leave an empty Working file behind.
-                recording.Dispose();
-                File.Delete(recording.WorkingFilePath);
-            }
-            throw;
+            capture?.Dispose();
         }
+        catch (Exception ex)
+        {
+            lock (captures)
+            {
+                if (captures[source] == capture) captures[source] = null;
+            }
+            capture?.Dispose();
+            Report(source, ex);
+        }
+    }
+
+    /// <summary>
+    /// True while <paramref name="source"/> has a capture running: a <see cref="SourceLost"/> that arrives then is
+    /// about a capture it has already switched away from.
+    /// </summary>
+    public bool IsCapturing(Source source)
+    {
+        lock (captures) return captures[source] is { HasFailed: false };
     }
 
     /// <summary>Stops the Recording and completes once the Working file is written and closed.</summary>
@@ -99,8 +145,35 @@ sealed class Recorder
 
     void DisposeCaptures()
     {
-        if (Interlocked.Exchange(ref capturesDisposed, 1) != 0) return;
-        foreach (var capture in captures) capture.Dispose();
+        List<SourceCapture> toDispose;
+        lock (captures)
+        {
+            if (capturesDisposed) return;
+            capturesDisposed = true;
+            toDispose = [.. captures.Values.OfType<SourceCapture>()];
+            foreach (var source in captures.Keys) captures[source] = null;
+        }
+        foreach (var capture in toDispose) capture.Dispose();
+    }
+
+    /// <summary>
+    /// A capture stopped with an error: only the Source's current capture counts, not one it switched away from.
+    /// It stays in place, delivering nothing, until <see cref="Switch"/> or Stop disposes it: not here, on its own thread.
+    /// </summary>
+    void OnCaptureFailed(SourceCapture capture, Exception error)
+    {
+        lock (captures)
+        {
+            if (captures[capture.Source] != capture) return;
+        }
+        Report(capture.Source, error);
+    }
+
+    void Report(Source source, Exception error)
+    {
+        var kind = CaptureErrors.Classify(error);
+        if (kind == CaptureError.Unrecoverable) Failed?.Invoke(error);
+        else SourceLost?.Invoke(source, kind);
     }
 
     void Pace()
@@ -119,6 +192,7 @@ sealed class Recorder
         {
             recording.Dispose();
             completed.SetException(ex);
+            Failed?.Invoke(ex);
         }
     }
 }

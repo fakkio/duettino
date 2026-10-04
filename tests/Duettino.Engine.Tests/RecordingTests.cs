@@ -322,6 +322,27 @@ public sealed class RecordingTests : IDisposable
         Assert.InRange(Rms(file.OutputLeft, 497, 503), 0.8 * ToneRms, 1.2 * ToneRms);
     }
 
+    [Fact]
+    public void An_Input_lost_for_a_while_then_back_on_another_device_leaves_silence_in_between_and_the_Output_untouched()
+    {
+        // The headset microphone goes at 400 ms; at 1000 ms the Input is back, on a 44.1 kHz mono Fallback.
+        using var recording = Start();
+        for (int ms = 0; ms < 1400; ms += 10)
+        {
+            DeliverTone(recording, Source.Output, Packets.StereoFloat, toneStartMs: 0, packetMs: [ms], hz: 440);
+            if (ms < 400) DeliverTone(recording, Source.Input, Packets.StereoFloat, toneStartMs: 0, packetMs: [ms], hz: 440);
+            if (ms >= 1000) DeliverTone(recording, Source.Input, new SourceFormat(44100, 1, SampleType.Float32), toneStartMs: 0, packetMs: [ms], hz: 440);
+        }
+        RunUntil(recording, 1600);
+
+        var file = StopAndRead(recording);
+
+        AssertTone(file.Input, 3, 397, toneStartMs: 0, hz: 440);
+        Assert.All(Enumerable.Range(400 * 48 + 1, 600 * 48 - 2), i => Assert.Equal(0, file.Input(i)));
+        AssertTone(file.Input, 1003, 1397, toneStartMs: 0, hz: 440);
+        AssertTone(file.OutputLeft, 3, 1397, toneStartMs: 0, hz: 440);
+    }
+
     [Theory]
     [InlineData(3)]
     [InlineData(10)]

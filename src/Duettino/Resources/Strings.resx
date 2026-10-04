@@ -21,12 +21,6 @@
   <data name="OutputLabel" xml:space="preserve">
     <value>Output:</value>
   </data>
-  <data name="Input" xml:space="preserve">
-    <value>Input</value>
-  </data>
-  <data name="Output" xml:space="preserve">
-    <value>Output</value>
-  </data>
   <data name="RecordButton" xml:space="preserve">
     <value>● Record</value>
   </data>
@@ -64,10 +58,6 @@
     <value>The Recording stopped with an error: {0}</value>
     <comment>{0}: the error message.</comment>
   </data>
-  <data name="SourceFailed" xml:space="preserve">
-    <value>{0} is recorded as silence from now on: {1}</value>
-    <comment>{0}: Input or Output; {1}: the error message.</comment>
-  </data>
   <data name="InputFallback" xml:space="preserve">
     <value>Your Input, {0}, isn't connected: recording the Windows default, {1}, in its place.</value>
     <comment>Notice when the remembered Input is absent. {0}: name of the remembered Input; {1}: name of the Windows default Input.</comment>
@@ -75,6 +65,30 @@
   <data name="OutputFallback" xml:space="preserve">
     <value>Your Output, {0}, isn't connected: recording the Windows default, {1}, in its place.</value>
     <comment>Notice when the remembered Output is absent. {0}: name of the remembered Output; {1}: name of the Windows default Output.</comment>
+  </data>
+  <data name="InputMissing" xml:space="preserve">
+    <value>Your Input, {0}, isn't connected, and there's no other: recording silence until one is.</value>
+    <comment>Notice when the remembered Input is absent and no capture device is left. {0}: name of the remembered Input.</comment>
+  </data>
+  <data name="OutputMissing" xml:space="preserve">
+    <value>Your Output, {0}, isn't connected, and there's no other: recording silence until one is.</value>
+    <comment>Notice when the remembered Output is absent and no playback device is left. {0}: name of the remembered Output.</comment>
+  </data>
+  <data name="InputLost" xml:space="preserve">
+    <value>The Input, {0}, stopped working: recording silence until it's back.</value>
+    <comment>Notice when the Input's capture stopped mid-Recording and Duettino waits to open it again. {0}: name of the Input in use.</comment>
+  </data>
+  <data name="OutputLost" xml:space="preserve">
+    <value>The Output, {0}, stopped working: recording silence until it's back.</value>
+    <comment>Notice when the Output's capture stopped mid-Recording and Duettino waits to open it again. {0}: name of the Output in use.</comment>
+  </data>
+  <data name="DiskFull" xml:space="preserve">
+    <value>The disk is full: free some space, or choose another folder.</value>
+    <comment>Error text inside CannotStart, CannotStop and CannotFinalize when the disk is full.</comment>
+  </data>
+  <data name="MicrophoneDenied" xml:space="preserve">
+    <value>Windows doesn't let Duettino use the microphone, so the Input can't be recorded. To allow it, turn on "Let desktop apps access your microphone" in Settings › Privacy &amp; security › Microphone.</value>
+    <comment>Notice when the Windows privacy settings deny microphone access to desktop apps.</comment>
   </data>
   <data name="FolderLabel" xml:space="preserve">
     <value>Save to:</value>

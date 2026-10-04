@@ -23,7 +23,7 @@ sealed class MainForm : Form
     readonly System.Windows.Forms.Timer deviceRefresh = new() { Interval = DeviceRefreshDelayMs };
     readonly Dictionary<Source, ComboBox> lists = Sources.ToDictionary(s => s, _ => DeviceList());
     readonly Dictionary<Source, LevelMeter> meters = Sources.ToDictionary(s => s, _ => Meter());
-    readonly System.Windows.Forms.Timer meterRefresh = new() { Interval = LevelMeter.RefreshIntervalMs };
+    readonly System.Windows.Forms.Timer recordingTick = new() { Interval = LevelMeter.RefreshIntervalMs };
     readonly Label deviceNotice = NoticeLabel();
     readonly Label folderPath = new()
     {
@@ -40,6 +40,8 @@ sealed class MainForm : Form
     readonly ToolTip toolTip = new();
     Settings settings = Settings.Load(Settings.DefaultPath);
     readonly Dictionary<Source, SourceSelection> selections = [];
+    readonly Dictionary<Source, SourceFollower> followers = []; // while recording
+    readonly SystemClock clock = new();
     Recorder? recorder;
     bool finalizing;
     CancellationTokenSource? finalizationCancellation;
@@ -85,7 +87,11 @@ sealed class MainForm : Form
             list.SelectionChangeCommitted += (_, _) => Choose(source, list.SelectedItem as AudioEndpoint);
         changeFolderButton.Click += (_, _) => ChangeFolder();
         openFolderButton.Click += (_, _) => OpenFolder();
-        meterRefresh.Tick += (_, _) => ShowLevels();
+        recordingTick.Tick += (_, _) =>
+        {
+            ShowLevels();
+            FollowDevices();
+        };
 
         catalogue = new WindowsDeviceCatalogue();
         catalogue.Changed += () =>
@@ -96,7 +102,7 @@ sealed class MainForm : Form
         deviceRefresh.Tick += (_, _) =>
         {
             deviceRefresh.Stop();
-            // The Sources are locked while recording: the lists are read again when it stops.
+            // While recording, each Source's follower reads the catalogue and switches its capture (FollowDevices).
             if (recorder == null) SelectSources();
         };
 
@@ -138,12 +144,10 @@ sealed class MainForm : Form
         {
             case CloseAction.AskStopAndSave:
                 e.Cancel = true;
-                // Windows may have shut the Recording down while the question was open.
-                if (ConfirmStopAndSave() && !leaving && Activity == WindowActivity.Recording)
-                {
-                    closeWhenFinalized = true;
-                    _ = StopRecording();
-                }
+                // While the question was open, Windows may have shut the Recording down, or an error stopped it already.
+                if (!ConfirmStopAndSave() || leaving) break;
+                if (Activity != WindowActivity.Idle) closeWhenFinalized = true;
+                if (Activity == WindowActivity.Recording) _ = StopRecording();
                 break;
             case CloseAction.CloseWhenFinalized:
                 e.Cancel = true;
@@ -169,7 +173,7 @@ sealed class MainForm : Form
         {
             catalogue.Dispose();
             deviceRefresh.Dispose();
-            meterRefresh.Dispose();
+            recordingTick.Dispose();
             toolTip.Dispose();
         }
         base.Dispose(disposing);
@@ -197,22 +201,45 @@ sealed class MainForm : Form
     static Button SmallButton(string text) =>
         new() { Text = text, AutoSize = true };
 
-    /// <summary>Selects an endpoint for each Source from the active ones, shows it and says when a Source is in Fallback.</summary>
+    /// <summary>Selects an endpoint for each Source from the active ones, and shows it.</summary>
     void SelectSources()
     {
-        var fallbacks = new List<string>();
+        foreach (var source in Sources) selections[source] = SourceSelection.For(catalogue, source, settings.Chosen(source));
+        ShowSelections();
+    }
+
+    /// <summary>
+    /// Shows the endpoint each Source uses, and says when one is in Fallback, has no device left, or has lost its
+    /// capture and waits to open it again.
+    /// </summary>
+    void ShowSelections()
+    {
+        var notices = new List<string>();
         foreach (var source in Sources)
         {
-            var selection = selections[source] = SourceSelection.For(catalogue, source, settings.Chosen(source));
+            var selection = selections[source];
             Fill(lists[source], selection);
-            if (selection.IsFallback)
-                fallbacks.Add(string.Format(
-                    source == Source.Input ? Strings.InputFallback : Strings.OutputFallback,
-                    selection.Chosen!.Name,
-                    selection.InUse!.Name));
+            var input = source == Source.Input;
+            if (followers.TryGetValue(source, out var follower) && follower.IsLost)
+                notices.Add(string.Format(input ? Strings.InputLost : Strings.OutputLost, selection.InUse!.Name));
+            else if (selection.IsFallback)
+                notices.Add(string.Format(
+                    input ? Strings.InputFallback : Strings.OutputFallback, selection.Chosen!.Name, selection.InUse!.Name));
+            else if (selection is { Chosen: { } chosen, InUse: null })
+                notices.Add(string.Format(input ? Strings.InputMissing : Strings.OutputMissing, chosen.Name));
         }
-        deviceNotice.Text = string.Join(Environment.NewLine, fallbacks);
-        deviceNotice.Visible = fallbacks.Count > 0;
+        deviceNotice.Text = string.Join(Environment.NewLine, notices);
+        deviceNotice.Visible = notices.Count > 0;
+    }
+
+    /// <summary>
+    /// An error as the notices show it: in the UI language when the user can act on it, Windows' or .NET's own message
+    /// otherwise.
+    /// </summary>
+    static string ErrorText(Exception error)
+    {
+        const int DiskFull = unchecked((int)0x80070070), HandleDiskFull = unchecked((int)0x80070027);
+        return error.HResult is DiskFull or HandleDiskFull ? Strings.DiskFull : error.Message;
     }
 
     void Fill(ComboBox list, SourceSelection selection)
@@ -310,24 +337,39 @@ sealed class MainForm : Form
 
     void StartRecording()
     {
+        Recorder started;
         try
         {
-            recorder = Recorder.Start(selections[Source.Input].InUse?.Id, selections[Source.Output].InUse?.Id, settings.Folder);
+            started = Recorder.Create(settings.Folder);
         }
         catch (Exception ex)
         {
-            notice.Text = string.Format(Strings.CannotStart, ex.Message);
+            notice.Text = string.Format(Strings.CannotStart, ErrorText(ex));
             return;
         }
+        recorder = started;
+        // Each Source follows its devices from now on, the preselected Windows default counting as chosen.
+        foreach (var source in Sources)
+            followers[source] = new SourceFollower(catalogue, clock, source, settings.Chosen(source) ?? selections[source].InUse);
         RememberPreselected();
-        recorder.SourceFailed += (source, ex) => BeginInvoke(() =>
-            notice.Text = string.Format(Strings.SourceFailed, source == Source.Input ? Strings.Input : Strings.Output, ex.Message));
-        foreach (var list in lists.Values) list.Enabled = false;
+        started.SourceLost += (source, error) => BeginInvoke(() => OnSourceLost(started, source, error));
+        started.Failed += error => BeginInvoke(() => OnRecordingFailed(started, error));
         changeFolderButton.Enabled = false;
         recordButton.Text = Strings.StopButton;
         notice.Text = Strings.RecordingNotice;
         elapsed.Text = FormatElapsed(TimeSpan.Zero);
-        meterRefresh.Start();
+        started.Start(InUseId(Source.Input), InUseId(Source.Output));
+        foreach (var (source, follower) in followers) selections[source] = follower.Selection;
+        ShowSelections();
+        recordingTick.Start();
+    }
+
+    string? InUseId(Source source) => followers[source].Selection.InUse?.Id;
+
+    void StopFollowing()
+    {
+        foreach (var follower in followers.Values) follower.Dispose();
+        followers.Clear();
     }
 
     /// <summary>
@@ -341,26 +383,69 @@ sealed class MainForm : Form
         elapsed.Text = FormatElapsed(recorder.Elapsed);
     }
 
-    async Task StopRecording()
+    /// <summary>Moves each Source to the endpoint its follower says, as devices come and go, and shows it.</summary>
+    void FollowDevices()
+    {
+        if (recorder == null) return;
+        var changed = false;
+        foreach (var (source, follower) in followers)
+        {
+            if (follower.Poll()) recorder.Switch(source, follower.Selection.InUse?.Id);
+            if (follower.Selection == selections[source]) continue;
+            selections[source] = follower.Selection;
+            changed = true;
+        }
+        if (changed) ShowSelections();
+    }
+
+    /// <summary>
+    /// A Source's capture stopped or couldn't be opened: it records silence until its follower finds it an endpoint
+    /// again. Access to the microphone denied in the Windows privacy settings is said, and not tried again. A loss that
+    /// arrives after the Source has already switched to a working capture is about the old one, and is ignored.
+    /// </summary>
+    void OnSourceLost(Recorder lostBy, Source source, CaptureError error)
+    {
+        if (recorder != lostBy || Activity != WindowActivity.Recording || lostBy.IsCapturing(source)) return;
+        if (error == CaptureError.AccessDenied && source == Source.Input)
+        {
+            notice.Text = Strings.MicrophoneDenied;
+            return;
+        }
+        followers[source].Lost();
+        ShowSelections();
+    }
+
+    /// <summary>The Recording can't go on: it is stopped and finalized as on Stop, the notice saying why.</summary>
+    void OnRecordingFailed(Recorder failed, Exception error)
+    {
+        if (recorder != failed || Activity != WindowActivity.Recording || leaving) return;
+        _ = StopRecording(error);
+    }
+
+    /// <summary>
+    /// Stops the Recording and finalizes it. One stopped by <paramref name="error"/>, or failing to stop, is finalized
+    /// all the same as far as its Working file goes, and the notice says what went wrong.
+    /// </summary>
+    async Task StopRecording(Exception? error = null)
     {
         var stopping = recorder!;
-        meterRefresh.Stop();
+        recordingTick.Stop();
+        StopFollowing();
         foreach (var meter in meters.Values) meter.Reset();
         recordButton.Text = Strings.RecordButton;
         BeginFinalizing();
-        var finalized = false;
         try
         {
             await stopping.StopAsync();
-            elapsed.Text = FormatElapsed(stopping.Elapsed);
-            (var text, finalized) = await FinalizeRecording(stopping.WorkingFilePath);
-            if (leaving) return;
-            notice.Text = text;
         }
         catch (Exception ex)
         {
-            notice.Text = string.Format(Strings.CannotStop, ex.Message);
+            error ??= ex;
         }
+        elapsed.Text = FormatElapsed(stopping.Elapsed);
+        var (text, finalized) = await FinalizeRecording(stopping.WorkingFilePath);
+        if (leaving) return;
+        notice.Text = error == null ? text : string.Format(Strings.CannotStop, ErrorText(error)) + Environment.NewLine + text;
         recorder = null;
         SelectSources();
         EndFinalizing(finalized);
@@ -382,7 +467,7 @@ sealed class MainForm : Form
         }
         catch (Exception ex)
         {
-            return (string.Format(Strings.CannotFinalize, ex.Message, workingFilePath), false);
+            return (string.Format(Strings.CannotFinalize, ErrorText(ex), workingFilePath), false);
         }
         finally
         {
@@ -436,7 +521,7 @@ sealed class MainForm : Form
     void LeaveWorkingFile()
     {
         leaving = true;
-        meterRefresh.Stop();
+        recordingTick.Stop();
         recorder?.Abandon();
         finalizationCancellation?.Cancel();
         try

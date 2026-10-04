@@ -28,12 +28,6 @@
   <data name="OutputLabel" xml:space="preserve">
     <value>Uscita:</value>
   </data>
-  <data name="Input" xml:space="preserve">
-    <value>Ingresso</value>
-  </data>
-  <data name="Output" xml:space="preserve">
-    <value>Uscita</value>
-  </data>
   <data name="RecordButton" xml:space="preserve">
     <value>● Registra</value>
   </data>
@@ -64,14 +58,29 @@
   <data name="CannotStop" xml:space="preserve">
     <value>La registrazione si è interrotta per un errore: {0}</value>
   </data>
-  <data name="SourceFailed" xml:space="preserve">
-    <value>{0}: da ora in poi si registra il silenzio ({1})</value>
-  </data>
   <data name="InputFallback" xml:space="preserve">
     <value>L'ingresso scelto, {0}, non è collegato: al suo posto si registra quello predefinito di Windows, {1}.</value>
   </data>
   <data name="OutputFallback" xml:space="preserve">
     <value>L'uscita scelta, {0}, non è collegata: al suo posto si registra quella predefinita di Windows, {1}.</value>
+  </data>
+  <data name="InputMissing" xml:space="preserve">
+    <value>L'ingresso scelto, {0}, non è collegato e non ce n'è un altro: si registra il silenzio finché non se ne collega uno.</value>
+  </data>
+  <data name="OutputMissing" xml:space="preserve">
+    <value>L'uscita scelta, {0}, non è collegata e non ce n'è un'altra: si registra il silenzio finché non se ne collega una.</value>
+  </data>
+  <data name="InputLost" xml:space="preserve">
+    <value>L'ingresso {0} ha smesso di funzionare: si registra il silenzio finché non torna.</value>
+  </data>
+  <data name="OutputLost" xml:space="preserve">
+    <value>L'uscita {0} ha smesso di funzionare: si registra il silenzio finché non torna.</value>
+  </data>
+  <data name="DiskFull" xml:space="preserve">
+    <value>Il disco è pieno: libera spazio o scegli un'altra cartella.</value>
+  </data>
+  <data name="MicrophoneDenied" xml:space="preserve">
+    <value>Windows non permette a Duettino di usare il microfono, quindi l'ingresso non può essere registrato. Per consentirlo, attiva "Consenti alle app desktop di accedere al microfono" in Impostazioni › Privacy e sicurezza › Microfono.</value>
   </data>
   <data name="FolderLabel" xml:space="preserve">
     <value>Salva in:</value>

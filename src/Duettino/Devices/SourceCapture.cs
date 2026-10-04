@@ -16,7 +16,7 @@ sealed class SourceCapture : IDisposable
     readonly WasapiRecorder recorder;
     readonly SourceFormat format;
     Recording? recording;
-    int failed;
+    int stopped;
 
     public SourceCapture(Source source, string endpointId)
     {
@@ -41,8 +41,16 @@ sealed class SourceCapture : IDisposable
         };
     }
 
-    /// <summary>Raised, once, when the capture can't go on; the Source is then recorded as silence.</summary>
-    public event Action<Source, Exception>? Failed;
+    /// <summary>
+    /// Raised, at most once and from a capture thread, when the capture stops with an error; the Source is recorded as
+    /// silence from then on. Never raised once the capture is disposed.
+    /// </summary>
+    public event Action<SourceCapture, Exception>? Failed;
+
+    public Source Source => source;
+
+    /// <summary>True once the capture has stopped, with an error or disposed: it delivers nothing more.</summary>
+    public bool HasFailed => Volatile.Read(ref stopped) != 0;
 
     public void Start(Recording target)
     {
@@ -52,13 +60,14 @@ sealed class SourceCapture : IDisposable
 
     public void Dispose()
     {
+        Interlocked.Exchange(ref stopped, 1);
         recorder.DataAvailable -= OnDataAvailable;
         recorder.Dispose();
     }
 
     void OnDataAvailable(ReadOnlySpan<byte> data, AudioClientBufferFlags flags, long devicePosition, long captureTime)
     {
-        if (recording == null || Volatile.Read(ref failed) != 0) return;
+        if (recording == null || Volatile.Read(ref stopped) != 0) return;
         try
         {
             recording.Deliver(source, format, data, captureTime, ToPacketFlags(flags));
@@ -71,7 +80,7 @@ sealed class SourceCapture : IDisposable
 
     void Fail(Exception ex)
     {
-        if (Interlocked.Exchange(ref failed, 1) == 0) Failed?.Invoke(source, ex);
+        if (Interlocked.Exchange(ref stopped, 1) == 0) Failed?.Invoke(this, ex);
     }
 
     static PacketFlags ToPacketFlags(AudioClientBufferFlags flags) =>
