@@ -7,6 +7,7 @@ namespace Duettino.Engine;
 /// the Output, each Leveled first (<see cref="Leveling"/>, measured over the whole Working file before the first read).
 /// The sum can reach twice full scale (the Loopback capture reaches 0 dBFS, and Leveling targets loudness, not peaks),
 /// so a <see cref="Limiter"/> keeps it under a ceiling with some headroom: no clipping, no wrap-around (ADR-0004).
+/// Once its cancellation token is cancelled, measuring and every read throw <see cref="OperationCanceledException"/>.
 /// </summary>
 sealed class MixStream : Stream
 {
@@ -16,14 +17,16 @@ sealed class MixStream : Stream
     readonly WorkingFileReader reader;
     readonly Leveling leveling;
     readonly Limiter limiter = new();
+    readonly CancellationToken cancellation;
     readonly short[] workingChunk = new short[ChunkFrames * WorkingFileReader.Channels];
     int delayedFrames = Limiter.Delay;
     long framesIn;
     long position;
 
-    public MixStream(string workingFilePath)
+    public MixStream(string workingFilePath, CancellationToken cancellation = default)
     {
-        leveling = Leveling.Measure(workingFilePath);
+        this.cancellation = cancellation;
+        leveling = Leveling.Measure(workingFilePath, cancellation);
         reader = new WorkingFileReader(workingFilePath);
     }
 
@@ -42,6 +45,7 @@ sealed class MixStream : Stream
 
     public override int Read(Span<byte> buffer)
     {
+        cancellation.ThrowIfCancellationRequested();
         int wanted = (int)Math.Min(buffer.Length / MixFrameBytes, (Length - position) / MixFrameBytes);
         var mix = MemoryMarshal.Cast<byte, short>(buffer[..(wanted * MixFrameBytes)]);
         int produced = 0;

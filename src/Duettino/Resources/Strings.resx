@@ -131,4 +131,18 @@
     <value>Couldn't delete {0}: {1}</value>
     <comment>{0}: path of the Orphan Working file; {1}: the error message.</comment>
   </data>
+  <data name="StopAndSaveHeading" xml:space="preserve">
+    <value>Stop and save?</value>
+    <comment>Heading of the prompt shown when the window is closed during a Recording.</comment>
+  </data>
+  <data name="StopAndSaveText" xml:space="preserve">
+    <value>Duettino is recording. It will stop, save the Recording file, then close.</value>
+  </data>
+  <data name="StopAndSaveButton" xml:space="preserve">
+    <value>Stop and save</value>
+  </data>
+  <data name="KeepRecordingButton" xml:space="preserve">
+    <value>Keep recording</value>
+    <comment>Dismisses the prompt: the Recording goes on and the window stays open.</comment>
+  </data>
 </root>

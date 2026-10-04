@@ -24,7 +24,7 @@ public sealed class FinalizationTests : IDisposable
         WorkingFiles.Write(WorkingFilePath, 4800, _ => (1000, 1000, -1000));
         var encoder = new CapturingEncoder();
 
-        var result = Finalization.Run(WorkingFilePath, encoder);
+        var result = Finalization.Run(WorkingFilePath, encoder, TestContext.Current.CancellationToken);
 
         Assert.Equal(Path.Combine(folder, Stem + ".mp3"), result.RecordingFilePath);
         Assert.False(result.IsWav);
@@ -40,7 +40,7 @@ public sealed class FinalizationTests : IDisposable
     {
         WorkingFiles.Write(WorkingFilePath, 3 * 48000, i => (0, (short)(8000 * Math.Sin(2 * Math.PI * 440 * i / 48000)), 0));
 
-        var result = Finalization.Run(WorkingFilePath, new MediaFoundationMp3Encoder());
+        var result = Finalization.Run(WorkingFilePath, new MediaFoundationMp3Encoder(), TestContext.Current.CancellationToken);
 
         Assert.Equal(Path.Combine(folder, Stem + ".mp3"), result.RecordingFilePath);
         Assert.False(File.Exists(WorkingFilePath));
@@ -63,7 +63,7 @@ public sealed class FinalizationTests : IDisposable
         WorkingFiles.Write(WorkingFilePath, 2 * 48000, i => (Sine(i), Sine(i), Sine(i)));
         var encoder = new CapturingEncoder();
 
-        Finalization.Run(WorkingFilePath, encoder);
+        Finalization.Run(WorkingFilePath, encoder, TestContext.Current.CancellationToken);
 
         var mix = encoder.Mix;
         int peak = mix.Max(s => Math.Abs((int)s));
@@ -83,7 +83,7 @@ public sealed class FinalizationTests : IDisposable
         File.WriteAllText(Path.Combine(folder, Stem + ".mp3"), "first");
         File.WriteAllText(Path.Combine(folder, Stem + "_2.mp3"), "second");
 
-        var result = Finalization.Run(WorkingFilePath, new CapturingEncoder());
+        var result = Finalization.Run(WorkingFilePath, new CapturingEncoder(), TestContext.Current.CancellationToken);
 
         Assert.Equal(Path.Combine(folder, Stem + "_3.mp3"), result.RecordingFilePath);
         Assert.Equal("first", File.ReadAllText(Path.Combine(folder, Stem + ".mp3")));
@@ -95,7 +95,7 @@ public sealed class FinalizationTests : IDisposable
     {
         WorkingFiles.Write(WorkingFilePath, 4800, _ => (1000, 1000, -1000));
 
-        var result = Finalization.Run(WorkingFilePath, new UnavailableEncoder());
+        var result = Finalization.Run(WorkingFilePath, new UnavailableEncoder(), TestContext.Current.CancellationToken);
 
         Assert.Equal(Path.Combine(folder, Stem + ".wav"), result.RecordingFilePath);
         Assert.True(result.IsWav);
@@ -113,9 +113,65 @@ public sealed class FinalizationTests : IDisposable
         WorkingFiles.Write(WorkingFilePath, 4800, i => ((short)i, 0, 0));
         var before = File.ReadAllBytes(WorkingFilePath);
 
-        Assert.Throws<IOException>(() => Finalization.Run(WorkingFilePath, new FailingEncoder()));
+        Assert.Throws<IOException>(() => Finalization.Run(WorkingFilePath, new FailingEncoder(), TestContext.Current.CancellationToken));
 
         Assert.Equal(before, File.ReadAllBytes(WorkingFilePath));
+        Assert.Equal([WorkingFilePath], Directory.GetFiles(folder));
+    }
+
+    [Fact]
+    public void While_encoding_no_file_bears_a_Recording_file_name_so_a_Finalization_killed_midway_leaves_none_that_looks_complete()
+    {
+        WorkingFiles.Write(WorkingFilePath, 4800, i => ((short)i, 0, 0));
+        string[] midway = [];
+        var encoder = new MidwayEncoder(() => midway = Directory.GetFiles(folder));
+
+        var result = Finalization.Run(WorkingFilePath, encoder, TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, midway.Length); // the Working file and the one being encoded into
+        Assert.Contains(WorkingFilePath, midway);
+        Assert.All(midway.Where(f => f != WorkingFilePath), f => Assert.DoesNotContain(Path.GetExtension(f), new[] { ".mp3", ".wav" }));
+        Assert.Equal([Path.Combine(folder, Stem + ".mp3")], Directory.GetFiles(folder));
+        Assert.Equal(Path.Combine(folder, Stem + ".mp3"), result.RecordingFilePath);
+    }
+
+    [Fact]
+    public void The_partial_file_of_a_Finalization_killed_midway_is_replaced_when_the_Working_file_is_finalized_again()
+    {
+        WorkingFiles.Write(WorkingFilePath, 4800, _ => (1000, 1000, -1000));
+        File.WriteAllText(Path.Combine(folder, Stem + ".mp3.partial"), "half an MP3, left by a killed process");
+
+        var result = Finalization.Run(WorkingFilePath, new CapturingEncoder(), TestContext.Current.CancellationToken);
+
+        Assert.Equal(Path.Combine(folder, Stem + ".mp3"), result.RecordingFilePath);
+        Assert.Equal(CapturingEncoder.Mp3Bytes, File.ReadAllBytes(result.RecordingFilePath));
+        Assert.Equal([result.RecordingFilePath], Directory.GetFiles(folder));
+    }
+
+    [Fact]
+    public void Cancelling_while_encoding_keeps_the_Working_file_and_leaves_no_Recording_file_nor_partial_file()
+    {
+        WorkingFiles.Write(WorkingFilePath, 4800, i => ((short)i, 0, 0));
+        var before = File.ReadAllBytes(WorkingFilePath);
+        using var cancellation = new CancellationTokenSource();
+
+        Assert.ThrowsAny<OperationCanceledException>(() =>
+            Finalization.Run(WorkingFilePath, new MidwayEncoder(cancellation.Cancel), cancellation.Token));
+
+        Assert.Equal(before, File.ReadAllBytes(WorkingFilePath));
+        Assert.Equal([WorkingFilePath], Directory.GetFiles(folder));
+    }
+
+    [Fact]
+    public void Cancelling_before_encoding_starts_keeps_the_Working_file_and_writes_nothing()
+    {
+        WorkingFiles.Write(WorkingFilePath, 4800, i => ((short)i, 0, 0));
+        var encoder = new CapturingEncoder();
+
+        Assert.ThrowsAny<OperationCanceledException>(() =>
+            Finalization.Run(WorkingFilePath, encoder, new CancellationToken(canceled: true)));
+
+        Assert.Empty(encoder.Mix);
         Assert.Equal([WorkingFilePath], Directory.GetFiles(folder));
     }
 }

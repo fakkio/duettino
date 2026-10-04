@@ -121,4 +121,16 @@
   <data name="CannotDelete" xml:space="preserve">
     <value>Impossibile eliminare {0}: {1}</value>
   </data>
+  <data name="StopAndSaveHeading" xml:space="preserve">
+    <value>Fermare e salvare?</value>
+  </data>
+  <data name="StopAndSaveText" xml:space="preserve">
+    <value>Duettino sta registrando: si fermerà, salverà il file della registrazione e poi si chiuderà.</value>
+  </data>
+  <data name="StopAndSaveButton" xml:space="preserve">
+    <value>Ferma e salva</value>
+  </data>
+  <data name="KeepRecordingButton" xml:space="preserve">
+    <value>Continua a registrare</value>
+  </data>
 </root>

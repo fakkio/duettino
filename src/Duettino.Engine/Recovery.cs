@@ -45,4 +45,26 @@ public static class Recovery
         }
         return orphans;
     }
+
+    /// <summary>
+    /// Deletes the partial files that Finalizations killed midway left in <paramref name="folder"/> and that no
+    /// Finalization will replace any more, because their Working file is gone (the user chose to delete it).
+    /// Best effort: what can't be listed or deleted now is tried again next time.
+    /// </summary>
+    public static void DeleteStalePartialFiles(string folder)
+    {
+        try
+        {
+            if (!Directory.Exists(folder)) return;
+            foreach (var path in Directory.GetFiles(folder, "*" + Finalization.PartialSuffix))
+            {
+                // X.mp3.partial or X.wav.partial belongs to X.working.wav.
+                var stem = Path.GetFileNameWithoutExtension(path[..^Finalization.PartialSuffix.Length]);
+                if (!File.Exists(Path.Combine(folder, stem + Recording.WorkingFileSuffix))) File.Delete(path);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+        }
+    }
 }

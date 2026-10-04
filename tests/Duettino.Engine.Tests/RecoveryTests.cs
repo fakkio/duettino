@@ -42,7 +42,7 @@ public sealed class RecoveryTests : IDisposable
         WriteCrashed(path, frames: 72000, headerFrames: 24000, input: i => (short)(i < 70000 ? 0 : 8000));
         var encoder = new CapturingEncoder();
 
-        var result = Finalization.Run(path, encoder);
+        var result = Finalization.Run(path, encoder, TestContext.Current.CancellationToken);
 
         Assert.Equal(PathOf("Duettino_2026-10-01_14-30-05.mp3"), result.RecordingFilePath);
         Assert.Equal(72000 * 2, encoder.Mix.Length);
@@ -111,4 +111,28 @@ public sealed class RecoveryTests : IDisposable
 
         Assert.Equal([new OrphanWorkingFile(PathOf("Duettino_2026-10-01_14-30-05.working.wav"), null)], Recovery.FindOrphans(folder));
     }
+
+    [Fact]
+    public void Partial_files_whose_Working_file_is_gone_are_deleted_and_those_still_to_be_replaced_are_kept()
+    {
+        WorkingFiles.Write(PathOf("Duettino_2026-10-02_09-00-00.working.wav"), 480, _ => (0, 0, 0));
+        File.WriteAllText(PathOf("Duettino_2026-10-02_09-00-00.mp3.partial"), "replaced when that Working file is recovered");
+        File.WriteAllText(PathOf("Duettino_2026-10-01_14-30-05.mp3.partial"), "its Working file was deleted");
+        File.WriteAllText(PathOf("Duettino_2026-10-01_14-30-05.wav.partial"), "its Working file was deleted");
+        File.WriteAllText(PathOf("Duettino_2026-10-01_14-30-05.mp3"), "a Recording file");
+
+        Recovery.DeleteStalePartialFiles(folder);
+
+        Assert.Equal(
+            [
+                PathOf("Duettino_2026-10-01_14-30-05.mp3"),
+                PathOf("Duettino_2026-10-02_09-00-00.mp3.partial"),
+                PathOf("Duettino_2026-10-02_09-00-00.working.wav"),
+            ],
+            Directory.GetFiles(folder).Order(StringComparer.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Looking_for_partial_files_in_a_folder_that_does_not_exist_yet_finds_nothing() =>
+        Recovery.DeleteStalePartialFiles(PathOf("not yet created"));
 }

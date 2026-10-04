@@ -15,6 +15,8 @@ sealed class Recorder
     readonly List<SourceCapture> captures;
     readonly Thread pacer;
     readonly TaskCompletionSource completed = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    int capturesDisposed;
+    volatile bool abandoned;
 
     Recorder(Recording recording, List<SourceCapture> captures)
     {
@@ -79,8 +81,26 @@ sealed class Recorder
         }
         finally
         {
-            foreach (var capture in captures) capture.Dispose();
+            DisposeCaptures();
         }
+    }
+
+    /// <summary>
+    /// Closes the Working file at once, its header up to date, without waiting for the audio still in flight: for Windows
+    /// shutting down, which won't wait for a Stop. The Working file is left for Recovery; a pending <see cref="StopAsync"/>
+    /// never completes.
+    /// </summary>
+    public void Abandon()
+    {
+        abandoned = true;
+        DisposeCaptures();
+        recording.Dispose();
+    }
+
+    void DisposeCaptures()
+    {
+        if (Interlocked.Exchange(ref capturesDisposed, 1) != 0) return;
+        foreach (var capture in captures) capture.Dispose();
     }
 
     void Pace()
@@ -90,6 +110,7 @@ sealed class Recorder
             while (!recording.IsCompleted)
             {
                 Thread.Sleep(PacerIntervalMs);
+                if (abandoned) return;
                 recording.Advance();
             }
             completed.SetResult();

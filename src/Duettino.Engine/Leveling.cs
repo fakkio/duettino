@@ -49,7 +49,8 @@ sealed class Leveling
     public GainCurve Output { get; }
 
     /// <summary>Reads the whole Working file at <paramref name="workingFilePath"/> and works out each Source's gain.</summary>
-    public static Leveling Measure(string workingFilePath)
+    /// <exception cref="OperationCanceledException"><paramref name="cancellation"/> was cancelled.</exception>
+    public static Leveling Measure(string workingFilePath, CancellationToken cancellation = default)
     {
         var inputBlocks = new List<Block>();
         var outputBlocks = new List<Block>();
@@ -58,6 +59,7 @@ sealed class Leveling
         int frames;
         while ((frames = reader.Read(samples)) > 0)
         {
+            cancellation.ThrowIfCancellationRequested();
             double inputEnergy = 0, outputEnergy = 0;
             for (int i = 0; i < frames; i++)
             {

@@ -104,6 +104,19 @@ sealed class FailingEncoder : IMp3Encoder
     }
 }
 
+/// <summary>An MP3 encoder that runs <c>midway</c> once it has encoded half the Mix, then encodes the rest.</summary>
+sealed class MidwayEncoder(Action midway) : IMp3Encoder
+{
+    public void Encode(Stream mix, Stream destination)
+    {
+        var half = new byte[mix.Length / 2];
+        mix.ReadExactly(half);
+        destination.Write(half);
+        midway();
+        mix.CopyTo(destination);
+    }
+}
+
 /// <summary>An MP3 encoder on a machine that has none, as a Windows N edition without the Media Feature Pack.</summary>
 sealed class UnavailableEncoder : IMp3Encoder
 {

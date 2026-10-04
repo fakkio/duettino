@@ -35,7 +35,7 @@ public sealed class LevelingTests : IDisposable
     {
         WorkingFiles.Write(WorkingFilePath, seconds * Rate, frame);
         var encoder = new CapturingEncoder();
-        Finalization.Run(WorkingFilePath, encoder);
+        Finalization.Run(WorkingFilePath, encoder, TestContext.Current.CancellationToken);
         return encoder.Mix;
     }
 
