@@ -6,6 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Symbols inside each assembly: the single-file publish keeps line numbers in stack traces and ships no .pdb beside the executable. -->
+    <DebugType>embedded</DebugType>
   </PropertyGroup>
 
 </Project>
