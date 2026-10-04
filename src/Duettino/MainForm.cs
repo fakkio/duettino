@@ -49,6 +49,7 @@ sealed class MainForm : Form
     bool closeWhenFinalized;
     bool sessionEnding; // handling WM_QUERYENDSESSION
     bool leaving; // the window is closing and leaving the Working file: nothing more is shown
+    bool microphoneDenied; // the Input is denied by the Windows privacy settings, and tried again until allowed
 
     public MainForm()
     {
@@ -220,7 +221,8 @@ sealed class MainForm : Form
             var selection = selections[source];
             Fill(lists[source], selection);
             var input = source == Source.Input;
-            if (followers.TryGetValue(source, out var follower) && follower.IsLost)
+            // Denied access is said by its own notice, not as a device that stopped working.
+            if (followers.TryGetValue(source, out var follower) && follower.IsLost && !(input && microphoneDenied))
                 notices.Add(string.Format(input ? Strings.InputLost : Strings.OutputLost, selection.InUse!.Name));
             else if (selection.IsFallback)
                 notices.Add(string.Format(
@@ -348,6 +350,7 @@ sealed class MainForm : Form
             return;
         }
         recorder = started;
+        microphoneDenied = false;
         // Each Source follows its devices from now on, the preselected Windows default counting as chosen.
         foreach (var source in Sources)
             followers[source] = new SourceFollower(catalogue, clock, source, settings.Chosen(source) ?? selections[source].InUse);
@@ -395,21 +398,29 @@ sealed class MainForm : Form
             selections[source] = follower.Selection;
             changed = true;
         }
+        if (microphoneDenied && recorder.IsCapturing(Source.Input))
+        {
+            // Allowed again in the privacy settings: the Input is being recorded.
+            microphoneDenied = false;
+            notice.Text = Strings.RecordingNotice;
+            changed = true;
+        }
         if (changed) ShowSelections();
     }
 
     /// <summary>
     /// A Source's capture stopped or couldn't be opened: it records silence until its follower finds it an endpoint
-    /// again. Access to the microphone denied in the Windows privacy settings is said, and not tried again. A loss that
-    /// arrives after the Source has already switched to a working capture is about the old one, and is ignored.
+    /// again. Access to the microphone denied in the Windows privacy settings is said, and tried again like a lost
+    /// device, so the Input starts as soon as it is allowed. A loss that arrives after the Source has already switched
+    /// to a working capture is about the old one, and is ignored.
     /// </summary>
     void OnSourceLost(Recorder lostBy, Source source, CaptureError error)
     {
         if (recorder != lostBy || Activity != WindowActivity.Recording || lostBy.IsCapturing(source)) return;
         if (error == CaptureError.AccessDenied && source == Source.Input)
         {
+            microphoneDenied = true;
             notice.Text = Strings.MicrophoneDenied;
-            return;
         }
         followers[source].Lost();
         ShowSelections();

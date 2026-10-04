@@ -35,32 +35,46 @@ public sealed class SourceFollowerTests
     }
 
     [Fact]
-    public void The_chosen_Output_coming_back_is_used_again_once_devices_have_been_quiet_for_a_while()
+    public void The_chosen_Output_coming_back_is_used_again_as_soon_as_Windows_sends_the_sound_there()
     {
         var devices = new FakeDeviceCatalogue().WithOutputs(Speakers).WithDefaultOutput(Speakers);
         using var follower = new SourceFollower(devices, clock, Source.Output, Headphones);
         Assert.True(follower.Selection.IsFallback);
 
+        // Windows makes the headphones the default as they come back: the sound is there now, not on the speakers.
         devices.WithOutputs(Headphones, Speakers).WithDefaultOutput(Headphones);
         clock.AdvanceMs(SourceFollower.SettleTime.TotalMilliseconds);
-        // The Fallback still works: there is no hurry to leave it while the headphones may still be settling.
-        Assert.False(follower.Poll());
-        Assert.Equal(Speakers, follower.Selection.InUse);
 
-        clock.AdvanceMs((SourceFollower.StableTime - SourceFollower.SettleTime).TotalMilliseconds);
         Assert.True(follower.Poll());
         Assert.Equal(Headphones, follower.Selection.InUse);
         Assert.False(follower.Selection.IsFallback);
     }
 
     [Fact]
-    public void During_a_Fallback_the_Output_follows_the_Windows_default_where_it_moves()
+    public void The_chosen_Output_coming_back_while_the_sound_stays_elsewhere_is_used_again_once_devices_have_been_quiet_for_a_while()
+    {
+        var devices = new FakeDeviceCatalogue().WithOutputs(Speakers).WithDefaultOutput(Speakers);
+        using var follower = new SourceFollower(devices, clock, Source.Output, Headphones);
+
+        devices.WithOutputs(Headphones, Speakers);
+        clock.AdvanceMs(SourceFollower.SettleTime.TotalMilliseconds);
+        // The Fallback still carries the sound: no hurry to leave it while the headphones may still be settling.
+        Assert.False(follower.Poll());
+        Assert.Equal(Speakers, follower.Selection.InUse);
+
+        clock.AdvanceMs((SourceFollower.StableTime - SourceFollower.SettleTime).TotalMilliseconds);
+        Assert.True(follower.Poll());
+        Assert.Equal(Headphones, follower.Selection.InUse);
+    }
+
+    [Fact]
+    public void During_a_Fallback_the_Output_follows_the_Windows_default_as_soon_as_it_moves()
     {
         var devices = new FakeDeviceCatalogue().WithOutputs(Speakers, Hdmi).WithDefaultOutput(Speakers);
         using var follower = new SourceFollower(devices, clock, Source.Output, Headphones);
 
         devices.WithDefaultOutput(Hdmi);
-        clock.AdvanceMs(SourceFollower.StableTime.TotalMilliseconds);
+        clock.AdvanceMs(SourceFollower.SettleTime.TotalMilliseconds);
 
         Assert.True(follower.Poll());
         Assert.Equal(Hdmi, follower.Selection.InUse);
@@ -117,6 +131,24 @@ public sealed class SourceFollowerTests
     }
 
     [Fact]
+    public void The_Output_falls_back_without_waiting_for_the_Input_devices_to_settle()
+    {
+        var devices = new FakeDeviceCatalogue()
+            .WithInputs(Headset, Laptop).WithDefaultInput(Headset)
+            .WithOutputs(Headphones, Speakers).WithDefaultOutput(Headphones);
+        using var output = new SourceFollower(devices, clock, Source.Output, Headphones);
+
+        // A headset pulled out: the headphones go first, its microphone a moment later, as the loopback spike saw it.
+        devices.WithOutputs(Speakers).WithDefaultOutput(Speakers);
+        clock.AdvanceMs(SourceFollower.SettleTime.TotalMilliseconds - 100);
+        devices.WithInputs(Laptop).WithDefaultInput(Laptop);
+        clock.AdvanceMs(100);
+
+        Assert.True(output.Poll());
+        Assert.Equal(Speakers, output.Selection.InUse);
+    }
+
+    [Fact]
     public void Bluetooth_headphones_flapping_while_they_reconnect_switch_the_Output_once_away_and_once_back()
     {
         var devices = new FakeDeviceCatalogue().WithOutputs(Headphones, Speakers).WithDefaultOutput(Headphones);
@@ -126,12 +158,15 @@ public sealed class SourceFollowerTests
         // Into the case: gone, the default moves to the speakers.
         devices.WithOutputs(Speakers).WithDefaultOutput(Speakers);
         PollFor(follower, 1000, switches);
-        // Reconnecting: active for a moment, gone again, several times, a little longer apart than a burst.
+        // Reconnecting, as the loopback spike saw it: unplugged, not present, unplugged… a little longer apart than a
+        // burst, and active for a moment now and then, before Windows sends the sound there.
         for (int flap = 0; flap < 4; flap++)
         {
-            devices.WithOutputs(Headphones, Speakers).WithDefaultOutput(Headphones);
+            devices.WithOutputs(Speakers);
             PollFor(follower, 700, switches);
-            devices.WithOutputs(Speakers).WithDefaultOutput(Speakers);
+            devices.WithOutputs(Headphones, Speakers);
+            PollFor(follower, 700, switches);
+            devices.WithOutputs(Speakers);
             PollFor(follower, 700, switches);
         }
         // Back for good.
