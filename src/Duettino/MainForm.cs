@@ -17,6 +17,13 @@ sealed class MainForm : Form
     // A cancelled Finalization stops at its next read, well within this, and deletes its partial file before exiting.
     const int FinalizationCancelWaitMs = 1000;
 
+    // The device lists, the meters and the folder path, at 96 DPI; they stretch with their column when a notice is wider.
+    const int FieldWidth = 320;
+
+    // Around the window's contents, at 96 DPI. On the layout, not the window: WinForms doesn't scale a window's own
+    // padding when it moves to a screen with another DPI.
+    const int WindowPadding = 12;
+
     static readonly Source[] Sources = [Source.Input, Source.Output];
 
     readonly IDeviceCatalogue catalogue;
@@ -28,11 +35,14 @@ sealed class MainForm : Form
     readonly Label deviceNotice = NoticeLabel();
     readonly Label folderPath = new()
     {
-        AutoEllipsis = true, Width = 320, TextAlign = ContentAlignment.MiddleLeft, Anchor = AnchorStyles.Left | AnchorStyles.Right,
+        AutoEllipsis = true, Width = FieldWidth, TextAlign = ContentAlignment.MiddleLeft, Anchor = AnchorStyles.Left | AnchorStyles.Right,
     };
     readonly Button changeFolderButton = SmallButton(Strings.ChangeFolderButton);
     readonly Button openFolderButton = SmallButton(Strings.OpenFolderButton);
-    readonly Button recordButton = new() { AutoSize = true, Padding = new Padding(12, 4, 12, 4), Anchor = AnchorStyles.Left };
+    readonly Button recordButton = new()
+    {
+        AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, MinimumSize = new Size(75, 0), Padding = new Padding(12, 4, 12, 4), Anchor = AnchorStyles.Left,
+    };
     readonly Label elapsed = new()
     {
         Text = FormatElapsed(TimeSpan.Zero), AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(12, 3, 3, 3),
@@ -54,20 +64,23 @@ sealed class MainForm : Form
 
     public MainForm()
     {
+        // Sizes are given at 96 DPI and scaled to the screen's, at start and whenever the window moves to another one.
+        AutoScaleDimensions = new SizeF(96F, 96F);
+        AutoScaleMode = AutoScaleMode.Dpi;
         Text = Strings.AppTitle;
         AutoSize = true;
         AutoSizeMode = AutoSizeMode.GrowAndShrink;
         FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
         StartPosition = FormStartPosition.CenterScreen;
-        Padding = new Padding(12);
 
-        var folderButtons = new FlowLayoutPanel { AutoSize = true, Margin = Padding.Empty };
+        // Everything that sizes itself also shrinks, so it comes back to its size when the window returns to a lower DPI.
+        var folderButtons = new FlowLayoutPanel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Margin = Padding.Empty };
         folderButtons.Controls.AddRange([changeFolderButton, openFolderButton]);
-        var recordRow = new FlowLayoutPanel { AutoSize = true, Margin = Padding.Empty };
+        var recordRow = new FlowLayoutPanel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Margin = Padding.Empty };
         recordRow.Controls.AddRange([recordButton, elapsed]);
 
-        var layout = new TableLayoutPanel { AutoSize = true, ColumnCount = 2, Dock = DockStyle.Fill };
+        var layout = new TableLayoutPanel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, ColumnCount = 2, Dock = DockStyle.Fill, Padding = new Padding(WindowPadding) };
         layout.Controls.Add(FieldLabel(Strings.InputLabel), 0, 0);
         layout.Controls.Add(lists[Source.Input], 1, 0);
         layout.Controls.Add(meters[Source.Input], 1, 1);
@@ -112,6 +125,19 @@ sealed class MainForm : Form
         SelectSources();
         ShowFolder();
     }
+
+    /// <remarks>
+    /// Scaling to the new DPI keeps each field as wide as its column has stretched it, rounding included: set back, the
+    /// fields would otherwise widen the window a little more at each move between screens.
+    /// </remarks>
+    protected override void OnDpiChanged(DpiChangedEventArgs e)
+    {
+        base.OnDpiChanged(e);
+        var width = LogicalToDeviceUnits(FieldWidth);
+        foreach (var field in Fields) field.Width = width;
+    }
+
+    IEnumerable<Control> Fields => [.. lists.Values, .. meters.Values, folderPath];
 
     protected override async void OnShown(EventArgs e)
     {
@@ -186,10 +212,10 @@ sealed class MainForm : Form
         finalizing ? WindowActivity.Finalizing : recorder != null ? WindowActivity.Recording : WindowActivity.Idle;
 
     static ComboBox DeviceList() =>
-        new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 320, Anchor = AnchorStyles.Left | AnchorStyles.Right };
+        new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = FieldWidth, Anchor = AnchorStyles.Left | AnchorStyles.Right };
 
     static LevelMeter Meter() =>
-        new() { Width = 320, Height = 6, Anchor = AnchorStyles.Left | AnchorStyles.Right, Margin = new Padding(3, 0, 3, 6) };
+        new() { Width = FieldWidth, Height = 6, Anchor = AnchorStyles.Left | AnchorStyles.Right, Margin = new Padding(3, 0, 3, 6) };
 
     /// <summary>The timer's text: hours, minutes and whole seconds, the hours going past 24 if need be.</summary>
     internal static string FormatElapsed(TimeSpan time) =>
@@ -201,8 +227,9 @@ sealed class MainForm : Form
     static Label NoticeLabel() =>
         new() { AutoSize = true, MaximumSize = new Size(420, 0), Margin = new Padding(3, 8, 3, 3) };
 
+    // At least as wide as a standard Windows button.
     static Button SmallButton(string text) =>
-        new() { Text = text, AutoSize = true };
+        new() { Text = text, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, MinimumSize = new Size(75, 0) };
 
     /// <summary>Selects an endpoint for each Source from the active ones, and shows it.</summary>
     void SelectSources()
