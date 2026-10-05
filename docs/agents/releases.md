@@ -33,4 +33,12 @@ Merge the branch into both `main` and `develop`, per gitflow. On `main`, tag the
 
 ## Ship the binaries
 
-Build the release artifacts from the tagged commit with `dotnet publish -c Release` and attach them to a GitHub Release for `v<version>`. The exact publish profile (framework-dependent vs self-contained, single-file) and the downstream channels (winget, Microsoft Store MSIX) are still open decisions — see `docs/BRIEF.md` §7 and §12. Once decided, record them here and in an ADR.
+From the tagged commit, build the release executable and attach it to a GitHub Release for `v<version>`:
+
+```
+dotnet publish src/Duettino -p:PublishProfile=win-x64
+```
+
+The profile (`src/Duettino/Properties/PublishProfiles/win-x64.pubxml`) makes one self-contained, compressed, untrimmed win-x64 executable, about 55 MB, that runs without .NET installed (ADR-0007). It lands alone in `src/Duettino/bin/publish/win-x64/Duettino.exe`: symbols are embedded, so no `.pdb` ships beside it. Check that its file properties (Details tab) show the new version before uploading.
+
+The same executable goes to winget and Scoop. The Microsoft Store (MSIX) comes with the first stable release, not v1 — see `docs/BRIEF.md` §12; once it does, record how the MSIX is built here.
