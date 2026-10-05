@@ -19,7 +19,8 @@ sealed class MainForm : Form
 
     static readonly Source[] Sources = [Source.Input, Source.Output];
 
-    readonly WindowsDeviceCatalogue catalogue;
+    readonly IDeviceCatalogue catalogue;
+    readonly Exception? audioUnavailable; // the Windows audio system can't be reached: no device, Record disabled
     readonly System.Windows.Forms.Timer deviceRefresh = new() { Interval = DeviceRefreshDelayMs };
     readonly Dictionary<Source, ComboBox> lists = Sources.ToDictionary(s => s, _ => DeviceList());
     readonly Dictionary<Source, LevelMeter> meters = Sources.ToDictionary(s => s, _ => Meter());
@@ -94,7 +95,8 @@ sealed class MainForm : Form
             FollowDevices();
         };
 
-        catalogue = new WindowsDeviceCatalogue();
+        (catalogue, audioUnavailable) = AudioSystem.Open(() => new WindowsDeviceCatalogue());
+        recordButton.Enabled = audioUnavailable == null;
         catalogue.Changed += () =>
         {
             deviceRefresh.Stop();
@@ -172,7 +174,7 @@ sealed class MainForm : Form
     {
         if (disposing)
         {
-            catalogue.Dispose();
+            (catalogue as IDisposable)?.Dispose();
             deviceRefresh.Dispose();
             recordingTick.Dispose();
             toolTip.Dispose();
@@ -211,7 +213,7 @@ sealed class MainForm : Form
 
     /// <summary>
     /// Shows the endpoint each Source uses, and says when one is in Fallback, has no device left, or has lost its
-    /// capture and waits to open it again.
+    /// capture and waits to open it again. With the Windows audio system unavailable, says that alone.
     /// </summary>
     void ShowSelections()
     {
@@ -220,6 +222,7 @@ sealed class MainForm : Form
         {
             var selection = selections[source];
             Fill(lists[source], selection);
+            if (audioUnavailable != null) continue;
             var input = source == Source.Input;
             // Denied access is said by its own notice, not as a device that stopped working.
             if (followers.TryGetValue(source, out var follower) && follower.IsLost && !(input && microphoneDenied))
@@ -230,6 +233,7 @@ sealed class MainForm : Form
             else if (selection is { Chosen: { } chosen, InUse: null })
                 notices.Add(string.Format(input ? Strings.InputMissing : Strings.OutputMissing, chosen.Name));
         }
+        if (audioUnavailable != null) notices.Add(string.Format(Strings.AudioUnavailable, ErrorText(audioUnavailable)));
         deviceNotice.Text = string.Join(Environment.NewLine, notices);
         deviceNotice.Visible = notices.Count > 0;
     }
@@ -503,7 +507,7 @@ sealed class MainForm : Form
     {
         finalizing = false;
         changeFolderButton.Enabled = true;
-        recordButton.Enabled = true;
+        recordButton.Enabled = audioUnavailable == null;
         var close = closeWhenFinalized && finalized;
         closeWhenFinalized = false;
         if (close) Close();

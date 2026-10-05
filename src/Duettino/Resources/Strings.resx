@@ -159,4 +159,9 @@
     <value>Keep recording</value>
     <comment>Dismisses the prompt: the Recording goes on and the window stays open.</comment>
   </data>
+  <data name="AudioUnavailable" xml:space="preserve">
+    <value>Windows audio is not available: {0}
+Start the Windows Audio service, then open Duettino again.</value>
+    <comment>Notice when the Windows audio system can't be reached at startup: no device is listed and Record is disabled. {0}: the error message, which may end with its HRESULT in brackets, hence the line break.</comment>
+  </data>
 </root>

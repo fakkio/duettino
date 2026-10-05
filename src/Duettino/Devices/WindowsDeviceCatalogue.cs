@@ -10,10 +10,21 @@ sealed class WindowsDeviceCatalogue : IDeviceCatalogue, IDisposable
     readonly MMDeviceEnumerator enumerator = new();
     readonly MMDeviceNotificationClient notifications;
 
-    /// <summary>Create it on the UI thread: <see cref="Changed"/> is raised there.</summary>
+    /// <summary>
+    /// Create it on the UI thread: <see cref="Changed"/> is raised there. Throws a COM error when the Windows audio
+    /// system can't be reached (see <see cref="AudioSystem"/>).
+    /// </summary>
     public WindowsDeviceCatalogue()
     {
-        notifications = enumerator.CreateNotificationClient(useSynchronizationContext: true);
+        try
+        {
+            notifications = enumerator.CreateNotificationClient(useSynchronizationContext: true);
+        }
+        catch
+        {
+            enumerator.Dispose();
+            throw;
+        }
         notifications.DeviceAdded += (_, _) => Changed?.Invoke();
         notifications.DeviceRemoved += (_, _) => Changed?.Invoke();
         notifications.DeviceStateChanged += (_, _) => Changed?.Invoke();

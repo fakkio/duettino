@@ -142,4 +142,8 @@
   <data name="KeepRecordingButton" xml:space="preserve">
     <value>Continua a registrare</value>
   </data>
+  <data name="AudioUnavailable" xml:space="preserve">
+    <value>L'audio di Windows non è disponibile: {0}
+Avvia il servizio Audio di Windows, poi riapri Duettino.</value>
+  </data>
 </root>
