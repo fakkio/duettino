@@ -24,5 +24,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ship as a single executable that runs without .NET installed.
 - Open the window with a notice, instead of crashing, on a Windows without the audio service.
 - Lay the window out right at any display scaling, and keep it right when it moves between screens with different scaling.
+- Release Duettino as open source under the MIT License.
 
 [Unreleased]: https://github.com/fakkio/duettino/commits/develop
