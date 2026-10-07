@@ -1,4 +1,3 @@
-using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms;
@@ -12,7 +11,7 @@ namespace Duettino.Tests;
 public sealed class MainFormDpiTests
 {
     [Fact]
-    public void Moving_to_a_screen_with_another_DPI_and_back_leaves_the_window_as_it_was() => OnUIThread(form =>
+    public void Moving_to_a_screen_with_another_DPI_and_back_leaves_the_window_as_it_was() => HiddenMainForm.Run(form =>
     {
         var home = form.DeviceDpi;
         var before = Layout(form);
@@ -27,7 +26,7 @@ public sealed class MainFormDpiTests
     });
 
     [Fact]
-    public void On_a_screen_with_another_DPI_the_fields_grow_with_it_and_nothing_overlaps() => OnUIThread(form =>
+    public void On_a_screen_with_another_DPI_the_fields_grow_with_it_and_nothing_overlaps() => HiddenMainForm.Run(form =>
     {
         var fields = Descendants(form).Where(c => c is ComboBox or LevelMeter).ToList();
         var before = fields.ToDictionary(c => c, c => c.Size);
@@ -48,30 +47,6 @@ public sealed class MainFormDpiTests
             foreach (var b in shown.Where(b => b != a && b.Parent == a.Parent))
                 Assert.False(a.Bounds.IntersectsWith(b.Bounds), $"{a.GetType().Name} {a.Bounds} overlaps {b.GetType().Name} {b.Bounds}");
     });
-
-    static void OnUIThread(Action<MainForm> test)
-    {
-        Exception? failure = null;
-        var thread = new Thread(() =>
-        {
-            try
-            {
-                Application.SetHighDpiMode(HighDpiMode.PerMonitorV2); // as the app's manifest asks
-                using var form = new MainForm();
-                _ = form.Handle;
-                form.PerformLayout();
-                test(form);
-            }
-            catch (Exception ex)
-            {
-                failure = ex;
-            }
-        });
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        thread.Join();
-        if (failure != null) ExceptionDispatchInfo.Throw(failure);
-    }
 
     /// <summary>What Windows sends when the window moves to a screen at <paramref name="dpi"/>: the window, resized in proportion.</summary>
     static void ChangeDpi(Form form, int dpi)

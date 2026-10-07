@@ -25,5 +25,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Open the window with a notice, instead of crashing, on a Windows without the audio service.
 - Lay the window out right at any display scaling, and keep it right when it moves between screens with different scaling.
 - Release Duettino as open source under the MIT License.
+- Give Duettino its own icon, two strands joining into one ribbon, on the executable in Explorer and on the window's title bar, taskbar button and Alt+Tab, sharp at any display scaling.
 
 [Unreleased]: https://github.com/fakkio/duettino/commits/develop

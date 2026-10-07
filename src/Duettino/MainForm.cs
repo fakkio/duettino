@@ -26,6 +26,9 @@ sealed class MainForm : Form
 
     static readonly Source[] Sources = [Source.Input, Source.Output];
 
+    // Every size of Duettino's icon, so the title bar, the taskbar and Alt+Tab take the one that fits the display scaling.
+    static readonly Icon AppIcon = LoadAppIcon();
+
     readonly IDeviceCatalogue catalogue;
     readonly Exception? audioUnavailable; // the Windows audio system can't be reached: no device, Record disabled
     readonly System.Windows.Forms.Timer deviceRefresh = new() { Interval = DeviceRefreshDelayMs };
@@ -68,6 +71,7 @@ sealed class MainForm : Form
         AutoScaleDimensions = new SizeF(96F, 96F);
         AutoScaleMode = AutoScaleMode.Dpi;
         Text = Strings.AppTitle;
+        Icon = AppIcon;
         AutoSize = true;
         AutoSizeMode = AutoSizeMode.GrowAndShrink;
         FormBorderStyle = FormBorderStyle.FixedSingle;
@@ -210,6 +214,12 @@ sealed class MainForm : Form
 
     WindowActivity Activity =>
         finalizing ? WindowActivity.Finalizing : recorder != null ? WindowActivity.Recording : WindowActivity.Idle;
+
+    static Icon LoadAppIcon()
+    {
+        using var stream = typeof(MainForm).Assembly.GetManifestResourceStream("Duettino.ico")!;
+        return new Icon(stream);
+    }
 
     static ComboBox DeviceList() =>
         new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = FieldWidth, Anchor = AnchorStyles.Left | AnchorStyles.Right };

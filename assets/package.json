@@ -1,0 +1,12 @@
+{
+  "name": "duettino-assets",
+  "private": true,
+  "description": "Generates Duettino's derived images from the icon's SVG source.",
+  "type": "module",
+  "scripts": {
+    "generate": "node generate.mjs"
+  },
+  "devDependencies": {
+    "@resvg/resvg-js": "2.6.2"
+  }
+}
