@@ -121,11 +121,10 @@ export const readmeToPage = {
       ]);
     }
   },
-  // The README's icon (a <picture>) and its "# Duettino" title sit on one row:
-  // the icon opens the row, the title closes it.
+  // The README opens with its icon and "# Duettino"; on the page the header
+  // draws both, beside the theme toggle.
   heading(node, ctx) {
-    if (node.depth !== 1) return;
-    ctx.replaceNode(node, [node, {type: "html", value: "</div>"}]);
+    if (node.depth === 1) ctx.removeNode(node);
   },
   // The README separates the Download link from "All releases" with a dot;
   // next to the button, spacing does that job.
@@ -133,11 +132,8 @@ export const readmeToPage = {
     if (node.value === " · ") ctx.setProperty(node, "value", " ");
   },
   html(node, ctx) {
-    const html = rewriteHtml(node.value);
-    ctx.replaceNode(node, {
-      type: "html",
-      value: ICON_PICTURE.test(node.value) ? `<div class="brand">${html}` : html,
-    });
+    if (ICON_PICTURE.test(node.value)) return ctx.removeNode(node);
+    ctx.replaceNode(node, {type: "html", value: rewriteHtml(node.value)});
   },
   // GitHub's "> [!NOTE]" alert: plain Markdown would print the marker.
   blockquote(node, ctx) {

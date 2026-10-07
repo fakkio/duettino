@@ -3,18 +3,40 @@ import DarkToggle from "./DarkToggle.astro";
 ---
 
 <header class="header container">
+  <div class="brand">
+    <img class="theme-light" src="/assets/web/icon-light.svg" alt="" width="56" height="56" />
+    <img class="theme-dark" src="/assets/web/icon-dark.svg" alt="" width="56" height="56" />
+    <h1>Duettino</h1>
+  </div>
   <DarkToggle />
 </header>
 
 <style>
   .header {
     display: flex;
-    justify-content: flex-end;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
     flex: 0 0 auto;
     margin-bottom: 1rem;
   }
 
   .header.container {
     padding-top: 1rem;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .brand h1 {
+    margin: 0;
+  }
+
+  /* The toggle stays on the right, even when the row wraps. */
+  .header :global([data-dark-toggle]) {
+    margin-left: auto;
   }
 </style>

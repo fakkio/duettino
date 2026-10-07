@@ -300,13 +300,21 @@ test("each step is one block beside its number", async ({page}) => {
   }
 });
 
-test("the icon and the title share a row", async ({page}) => {
+test("the icon, the title and the theme toggle share the header's row", async ({
+  page,
+}) => {
   await page.goto("/");
-  const title = page.getByRole("heading", {level: 1, name: "Duettino"});
-  const icon = page.locator(".brand img:visible");
-  const [t, i] = [await title.boundingBox(), await icon.boundingBox()];
-  expect(Math.abs(t.y + t.height / 2 - (i.y + i.height / 2))).toBeLessThan(i.height / 2);
-  expect(i.x + i.width).toBeLessThanOrEqual(t.x + 1);
+  const header = page.locator("header");
+  const icon = await header.locator("img:visible").boundingBox();
+  const title = await header.getByRole("heading", {level: 1, name: "Duettino"}).boundingBox();
+  const toggle = await header.locator("[data-dark-toggle]").boundingBox();
+  const middle = (b) => b.y + b.height / 2;
+  expect(Math.abs(middle(icon) - middle(title))).toBeLessThan(icon.height / 2);
+  expect(Math.abs(middle(toggle) - middle(title))).toBeLessThan(icon.height / 2);
+  expect(icon.x + icon.width).toBeLessThanOrEqual(title.x + 1);
+  const content = await page.locator("main").boundingBox();
+  expect(Math.abs(content.x + content.width - (toggle.x + toggle.width))).toBeLessThan(20);
+  await expect(page.locator("main h1")).toHaveCount(0);
 });
 
 test("the bullets alternate pumpkin and green sea", async ({page}) => {

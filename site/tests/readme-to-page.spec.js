@@ -83,7 +83,7 @@ test("an ordered item's content is wrapped in one step block", () => {
   expect(html).toContain("<li>plain</li>");
 });
 
-test("the icon and the title are one row", () => {
+test("the README's icon and title are left to the header", () => {
   const html = render(`<picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/web/icon-dark.svg">
   <img src="assets/web/icon-light.svg" alt="">
@@ -93,5 +93,7 @@ test("the icon and the title are one row", () => {
 
 ## Download`);
 
-  expect(html).toMatch(/<div class="brand">[\s\S]*<h1>Duettino<\/h1>\s*<\/div>\s*<h2>/);
+  expect(html).not.toContain("icon-");
+  expect(html).not.toContain("<h1");
+  expect(html).toContain("<h2>Download</h2>");
 });
