@@ -90,7 +90,7 @@ export const readmeToPage = {
       const label = node.children.map((c) => c.value ?? "").join("");
       ctx.replaceNode(node, {
         type: "html",
-        value: `<a class="btn" href="${DOWNLOAD_URL}">${escapeHtml(label)}</a>`,
+        value: `<a class="btn" href="${DOWNLOAD_URL}"><span class="shadow"></span><span class="edge"></span><span class="front">${escapeHtml(label)}</span></a>`,
       });
       return;
     }

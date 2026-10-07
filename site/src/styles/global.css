@@ -19,11 +19,11 @@ a {
   transition: color var(--theme-transition-duration);
 }
 
-a:not(.onlyIcon):not(.stretchedLink) {
+a:not(.onlyIcon):not(.btn):not(.stretchedLink) {
   position: relative;
 }
 
-a:not(.onlyIcon):not(.stretchedLink)::after,
+a:not(.onlyIcon):not(.btn):not(.stretchedLink)::after,
 a.stretchedLink > *::after {
   content: "";
   position: absolute;

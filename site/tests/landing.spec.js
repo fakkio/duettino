@@ -45,7 +45,7 @@ for (const theme of THEMES) {
       page,
     }) => {
       await gotoWithTheme(page, "/", theme);
-      const link = page.locator("main a:not(.onlyIcon)").first();
+      const link = page.locator("main a:not(.onlyIcon):not(.btn)").first();
       await link.focus();
       await expect
         .poll(() =>
@@ -344,4 +344,13 @@ test("the GitHub icon stays visible on the footer in both themes", async ({
     ]);
     expect(fill, theme).not.toBe(ground);
   }
+});
+
+test("the Download button has no link underline", async ({page}) => {
+  await page.goto("/");
+  const after = await page
+    .locator("main a.btn")
+    .evaluate((el) => getComputedStyle(el, "::after").content);
+  expect(after).toBe("none");
+  await expect(page.locator("main a.btn .front")).toHaveText("Download Duettino.exe");
 });

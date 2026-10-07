@@ -60,7 +60,7 @@ test("only the latest-executable link becomes the button", () => {
   );
 
   expect(html).toContain(
-    '<a class="btn" href="https://github.com/fakkio/duettino/releases/latest/download/Duettino.exe">Download Duettino.exe</a>',
+    '<a class="btn" href="https://github.com/fakkio/duettino/releases/latest/download/Duettino.exe"><span class="shadow"></span><span class="edge"></span><span class="front">Download Duettino.exe</span></a>',
   );
   expect(html).toContain('<a href="https://github.com/fakkio/duettino/releases">All releases</a>');
 });
