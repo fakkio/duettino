@@ -7,7 +7,9 @@
 
 **Records what you say and what you hear.**
 
-Duettino is a small Windows app that records your microphone and your headphones or speakers at the same time, into one MP3. It was made for calls on headphones, where no recorder in the room can hear the other side.
+On headphones, the other side of a call never leaves your computer, so a recorder on the desk hears only you. Duettino is a small, free Windows app that records your microphone and what plays in your headphones at the same time, into one MP3.
+
+Teams and Zoom can record a meeting themselves, but only when the organizer or your company allows it, and WhatsApp or Discord calls can't be recorded that way at all. Duettino works with any of them, because it records your own computer, not the call.
 
 <!-- Placeholder until the GIF is recorded: about 10 s, looped, cropped to the window, English UI, saving to D:\Recordings.
      Devices chosen → Record → meters and timer moving → Stop → "Saving…" → "Saved Duettino_….mp3". -->
@@ -21,27 +23,26 @@ Duettino is a small Windows app that records your microphone and your headphones
 
 It's a beta, tested on my own hardware: please [report what breaks](https://github.com/fakkio/duettino/issues).
 
-The download isn't signed yet, so Windows may say "Windows protected your PC": click **More info**, then **Run anyway**.
-The release notes give the file's SHA-256, if you want to check it's the one I published.
+> [!NOTE]
+> The first time, Windows may say "Windows protected your PC", because Duettino is new and Windows doesn't know it yet: click **More info**, then **Run anyway**. The [FAQ](#faq) explains why, and how to check the file is the one I published.
 
-## How it works: record a Teams or Zoom call with headphones
+## How to record a Teams or Zoom call with headphones
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/web/how-it-works-dark.svg">
   <img src="assets/web/how-it-works-light.svg" alt="What you say (the Input: your microphone) and what you hear (the Output: your headphones) join into one MP3 in Documents\Duettino.">
 </picture>
 
-1. **Pick your microphone as the Input and your headphones as the Output.** Pick the Output your call app plays on. Any pair works: a headset, a USB microphone with the laptop's speakers, an HDMI monitor. They don't have to be the same device.
+1. **Pick your microphone as the Input and your headphones as the Output.** If you have more than one pair, pick the one your call app plays on. They don't have to be one headset: a USB microphone with the laptop's speakers works too.
 2. **Press Record.** A meter for each side moves as you talk and listen, and a timer runs.
 3. **Press Stop.** A few seconds later the MP3 is in `Documents\Duettino`, named after the time you started, like `Duettino_2026-10-07_15-30-00.mp3`. An hour takes about 60 MB.
 
-Duettino records whatever plays on the Output, so it works the same with Teams, Zoom, Google Meet, Discord, WhatsApp or a call in the browser: no plugin, no bot joining the call, nothing to set up in the call app.
+That's all the setup there is: no plugin, no bot joining the call, nothing to change in the call app.
 
-## Who it's for: calls, and anything else you hear
+## Not only calls
 
-Anyone who wants their own voice and the computer's sound in one recording, without setting up a studio:
+Calls are what Duettino was made for, but it records whatever your computer plays, together with your voice. No studio to set up:
 
-- **Calls and meetings**: Teams, Zoom and Meet calls, so you can listen again instead of taking notes.
 - **Webinars and online lessons**: the speaker, and the questions you asked.
 - **Commentated videos**: your voice over the video or stream you're watching.
 - **Gaming**: the game and your voice in one file, without setting up OBS.
@@ -50,15 +51,14 @@ Anyone who wants their own voice and the computer's sound in one recording, with
 
 ## What it takes care of
 
-- **Both sides at the same loudness.** Each side is leveled before mixing, so a quiet microphone doesn't vanish under a loud call. A silent microphone's room noise isn't boosted, and nothing clips.
-- **In sync for hours.** The two sides stay together through long calls, silences, system hiccups and the slight speed difference between two devices.
+- **Both sides equally loud.** A quiet microphone doesn't vanish under a loud call, and nothing distorts when someone raises their voice. When you're silent, your room's hum isn't turned up.
+- **In sync for hours.** Your voice and the call stay together through long calls, silences and system hiccups, even though two devices never run at exactly the same speed.
 - **Devices that come and go.** Pull the headphone jack or put the earbuds back in their case mid-call: Duettino switches to the Windows default device, and back when yours returns. With no device left, it records silence instead of stopping.
-- **No drivers, no Stereo Mix.** It uses Windows' own loopback capture: no virtual cable to install, nothing to change in the sound settings.
-- **Crashes don't lose the recording.** If Duettino or Windows closes mid-recording, the next launch offers to recover what was recorded.
+- **Nothing lost to a crash.** If Duettino or Windows closes mid-recording, the next launch offers to recover what was recorded. If something goes wrong that Duettino can't fix, it stops, keeps what it has and tells you why.
 - **Safe to close.** Closing during a recording asks "Stop and save?" first, and waits for the file to be written.
+- **No drivers, no Stereo Mix.** Duettino uses a feature built into Windows: no virtual cable to install, nothing to change in the sound settings, and any microphone, headphones or speakers work.
 - **Remembers your setup.** Your microphone, headphones and folder are remembered. If one isn't connected, Duettino uses the Windows default and tells you.
 - **Says what's wrong.** If Windows blocks the microphone, Duettino says where to allow it, and starts recording it as soon as you do.
-- **Any device, any screen.** Any sample rate, mono to surround, and a window that stays sharp at any display scaling.
 - **English and Italian.** The window speaks Italian on an Italian Windows, English everywhere else.
 
 ## FAQ
@@ -68,14 +68,14 @@ Anyone who wants their own voice and the computer's sound in one recording, with
 
 Stereo Mix exists only on some sound cards, is often missing or turned off on Windows 11, and captures only what plays on its own sound card, not your USB or Bluetooth headphones. You'd still need a second program for your microphone, and a way to line the two up afterwards.
 
-Duettino captures any output device, headphones included, and records your microphone alongside it, in sync.
+Duettino records any headphones or speakers, USB and Bluetooth included, and your microphone alongside them, in sync.
 
 </details>
 
 <details>
 <summary>Does it work with Bluetooth headphones?</summary>
 
-Yes, with a limit that comes from Bluetooth itself. While the headset's own microphone is in use, by Duettino or by the call app, Windows switches the headset to its hands-free mode, which carries sound only up to about 8 kHz, like a phone call. Everything you hear on the headset sounds like that, not only the call, and so does the recording. Each switch also leaves a second or two of silence, which you hear too.
+Yes, with a limit that comes from Bluetooth itself. While the headset's own microphone is in use, by Duettino or by the call app, Windows switches the headset to a hands-free mode that sounds like an old phone call: muffled, with no highs. Everything you hear on the headset sounds like that, not only the call, and so does the recording. Each switch also leaves a second or two of silence, in your ears and in the recording.
 
 For full quality, use another microphone, such as the laptop's own or a USB one, in both Duettino and the call app.
 
@@ -121,9 +121,11 @@ It depends on where you and the other people are. The simple rule: tell the othe
 <details>
 <summary>Is it Audio Hijack for Windows, or an OBS alternative for audio only? How does it compare to Audacity?</summary>
 
-**OBS Studio** can record audio only, after some setup, but it's built for video and streaming. **Audacity** records from one sound device at a time, so your microphone plus the computer's sound needs them merged into one first, with Stereo Mix or a virtual cable. **Audio Hijack** does this and much more, but only on a Mac.
+- **OBS Studio** can record audio only, after some setup, but it's built for video and streaming.
+- **Audacity** records from one sound device at a time, so your microphone and the computer's sound have to be merged into one first, with Stereo Mix or a virtual cable.
+- **Audio Hijack** does this and much more, but only on a Mac.
 
-So if you were looking for Audio Hijack for Windows, or an OBS alternative for audio only, to record your voice and the computer's sound: that one job is all Duettino does. Two devices, one button, one MP3.
+Duettino does just this one job: two devices, one button, one MP3.
 
 </details>
 
