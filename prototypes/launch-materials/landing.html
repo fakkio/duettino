@@ -1,0 +1,674 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Duettino Landing Layouts</title>
+<link rel="icon" id="favicon" href="data:,">
+<!--
+  PROTOTYPE (throwaway). Question: what layout should duettino.fabiolazzaroni.dev have?
+  Three layouts of the same English copy, switchable via ?variant=A|B|C and the floating
+  bar at the bottom (or ← / →). The icon and palette are switchable too, so the accents
+  can be judged in the icon's real colors. The skeleton (reset, typography, 45rem
+  container, links, theme tokens, dark toggle, inverted footer) is copied from
+  ../fabiolazzaroni.dev/src. Open by double-clicking; no server needed.
+-->
+<style>
+  /* ---- Skeleton copied from fabiolazzaroni.dev: reset.css, base.css, theme.css, global.css ---- */
+  *, *::before, *::after { box-sizing: border-box; }
+  *:not(dialog) { margin: 0; }
+  body { line-height: 1.5; }
+  img, picture, video, canvas, svg { display: block; max-width: 100%; }
+  input, button, textarea, select { font: inherit; }
+  p, h1, h2, h3, h4, h5, h6 { overflow-wrap: break-word; }
+  p { text-wrap: pretty; }
+  h1, h2, h3, h4, h5, h6 { text-wrap: balance; }
+
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    font-size: 1rem; font-weight: 400; -webkit-text-size-adjust: 100%;
+  }
+  h1, h2, h3 { margin-bottom: .5rem; font-weight: 500; line-height: 1.2; }
+  h1 { font-size: calc(1.375rem + 1.5vw); }
+  h2 { font-size: calc(1.325rem + .9vw); }
+  @media (min-width: 1200px) { h1 { font-size: 2.5rem; } h2 { font-size: 2rem; } }
+  p { margin-bottom: 1rem; }
+  @media (prefers-reduced-motion: no-preference) { :root { scroll-behavior: smooth; } }
+
+  :root {
+    --color-text: #212529;
+    --color-background: #ffffff;
+    --color-bgTranslucent: #b4c3c744;
+    --color-link: #2470a2;
+    --color-muted: #b4c3c7;
+    --color-invertedText: #ecf0f1;
+    --color-invertedBackground: #34495e;
+    --color-invertedLink: #85c1e9;
+    --theme-transition-duration: .25s;
+    --underline-bounce-easing: cubic-bezier(.175, .885, .32, 1.275);
+    /* Prototype additions. The site has no "secondary text" token; this one sits between text and muted. */
+    --color-subtle: #5b6770;
+    --mono: "Cascadia Mono", Consolas, ui-monospace, monospace;
+    /* Duettino's accents: --c1 what you say, --c2 what you hear. Like the site, one palette per theme:
+       Flat UI's darker pair (pumpkin, green sea) on light, its brighter pair (carrot, turquoise) on dark,
+       so every accent keeps 3:1 against its ground. The palette menu can still force one pair. */
+    --c1: #D35400; --c2: #16A085; --c3: #2C3E50;
+    /* Filled shapes with dark text inside (step numbers) stay on the bright pair in both themes. */
+    --fill1: #E67E22; --fill2: #1ABC9C;
+    --band1: #E67E22; --band2: #1ABC9C;
+    --btn-bg: color-mix(in oklab, var(--c2) 72%, black);
+    --btn-fg: #ffffff;
+    --say-ink: color-mix(in oklab, var(--c1) 70%, black);
+    --hear-ink: color-mix(in oklab, var(--c2) 68%, black);
+    --on-accent: #14202b;
+  }
+  [data-theme="dark"] {
+    --color-text: #ecf0f1;
+    --color-background: #2c3e50;
+    --color-bgTranslucent: #2c3e5044;
+    --color-link: #85c1e9;
+    --color-muted: #4d565f;
+    --color-invertedText: #34495e;
+    --color-invertedBackground: #ecf0f1;
+    --color-invertedLink: #2470a2;
+    --color-subtle: #b3c0c9;
+    --c1: #E67E22; --c2: #1ABC9C;
+    --band1: #D35400; --band2: #16A085;
+    --btn-bg: var(--c2);
+    --btn-fg: #10202a;
+    --say-ink: color-mix(in oklab, var(--c1) 80%, white);
+    --hear-ink: color-mix(in oklab, var(--c2) 75%, white);
+    --color-bgTranslucent: #1f2d3b;
+    color-scheme: dark;
+  }
+
+  .container { width: 100%; max-width: 45rem; margin-left: auto; margin-right: auto; padding: 0 1rem; }
+
+  a { font-weight: 600; color: var(--color-link); text-decoration: none; transition: color var(--theme-transition-duration); }
+  a:not(.onlyIcon):not(.btn) { position: relative; }
+  a:not(.onlyIcon):not(.btn)::after {
+    content: ""; position: absolute; left: 0; right: 0; margin: 0 auto; bottom: 0; height: 2px; background: currentColor;
+    transition: opacity .35s var(--underline-bounce-easing), transform .35s var(--underline-bounce-easing);
+    opacity: 0; transform: scale(0);
+  }
+  a:hover:not(.onlyIcon):not(.btn)::after, a:focus-visible:not(.onlyIcon):not(.btn)::after { opacity: 1; transform: scale(1); }
+  a.onlyIcon { display: inline-block; transition: transform .25s; }
+  a.onlyIcon:hover, a.onlyIcon:focus-visible { transform: scale(1.35); }
+
+  body { background-color: var(--color-background); color: var(--color-text); transition: color var(--theme-transition-duration), background-color var(--theme-transition-duration); }
+  .layout { min-height: 100vh; display: flex; flex-direction: column; }
+  main { flex: 1 0 auto; }
+
+  /* Header: the site's own has only the toggle; here the EN/IT link sits next to it. */
+  .header { display: flex; align-items: center; gap: 1rem; padding-top: 1rem; margin-bottom: 1rem; }
+  .header .spacer { flex: 1; }
+  .lang { display: flex; gap: .35rem; font-size: .95rem; }
+  .lang [aria-current] { font-weight: 600; }
+  .lang .sep { color: var(--color-muted); }
+  .brand { display: flex; align-items: center; gap: .5rem; font-weight: 600; color: var(--color-text); }
+
+  .toggle { cursor: pointer; color: #e67e22; background: none; border: none; padding: 0; display: inline-flex; transition: color 600ms cubic-bezier(.34, 1.56, .64, 1); }
+  .toggle .icon { transform: rotate(90deg); transition: transform 600ms cubic-bezier(.34, 1.56, .64, 1); }
+  .toggle .centerCircle { transition: r 600ms cubic-bezier(.34, 1.56, .64, 1); }
+  .toggle .maskCircle { transition: cx 600ms cubic-bezier(.34, 1.56, .64, 1), cy 600ms cubic-bezier(.34, 1.56, .64, 1); }
+  .toggle .rays { transition: opacity 600ms cubic-bezier(.34, 1.56, .64, 1); }
+  [data-theme="dark"] .toggle { color: #ecf0f1; }
+  [data-theme="dark"] .toggle .icon { transform: rotate(40deg); }
+  [data-theme="dark"] .toggle .centerCircle { r: 9px; }
+  [data-theme="dark"] .toggle .maskCircle { cx: 50%; cy: 23%; }
+  [data-theme="dark"] .toggle .rays { opacity: 0; }
+
+  .footer { background-color: var(--color-invertedBackground); color: var(--color-invertedText); padding: .5rem 0; margin-top: 3rem; transition: color var(--theme-transition-duration), background-color var(--theme-transition-duration); }
+  .footer a, .footer a:hover { color: var(--color-invertedLink); }
+  .footer .inner { display: flex; justify-content: space-between; flex-wrap: wrap; gap: .25rem 1rem; }
+  .footer svg { display: inline-block; vertical-align: -3px; }
+
+  /* ---- Shared Duettino pieces ---- */
+  code { font-family: var(--mono); font-size: .9em; background: var(--color-bgTranslucent); padding: .05em .3em; border-radius: 3px; overflow-wrap: anywhere; }
+  pre { font-family: var(--mono); font-size: .9rem; background: var(--color-bgTranslucent); padding: .9rem 1rem; border-radius: 6px; overflow-x: auto; margin-bottom: 1rem; line-height: 1.6; }
+  pre code { background: none; padding: 0; }
+  .muted { color: var(--color-subtle); }
+  .small { font-size: .9rem; }
+  section { scroll-margin-top: 1rem; }
+  main h2 { margin-top: 2.75rem; }
+  ul, ol { padding-left: 1.25rem; margin-bottom: 1rem; }
+  li + li { margin-top: .35rem; }
+
+  .btn { display: inline-flex; align-items: center; gap: .6rem; background: var(--btn-bg); color: var(--btn-fg); padding: .7rem 1.2rem; border-radius: 6px; font-weight: 600; font-size: 1.1rem; transition: transform .2s, box-shadow .2s, background-color var(--theme-transition-duration); }
+  .btn:hover, .btn:focus-visible { color: var(--btn-fg); transform: translateY(-1px); box-shadow: 0 4px 14px -6px var(--btn-bg); }
+  .btn:focus-visible { outline: 3px solid var(--c1); outline-offset: 3px; }
+  .btn small { font-weight: 400; font-size: .8rem; opacity: .85; font-family: var(--mono); }
+
+  details { border-top: 1px solid var(--color-muted); padding: .6rem 0; }
+  details:last-of-type { border-bottom: 1px solid var(--color-muted); }
+  summary { cursor: pointer; font-weight: 600; list-style: none; display: flex; gap: .6rem; align-items: baseline; }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: "+"; font-family: var(--mono); color: var(--hear-ink); font-weight: 700; width: 1ch; flex: none; transition: transform .2s; }
+  details[open] summary::before { content: "−"; color: var(--say-ink); }
+  details > div { padding: .5rem 0 0 1.6rem; }
+  details > div p:last-child { margin-bottom: .25rem; }
+
+  /* The GIF placeholder: the real window, drawn roughly, in Windows' light theme as it will be recorded. */
+  .gif { position: relative; margin: 1.5rem auto 0; width: min(100%, 26rem); }
+  .gif .badge { position: absolute; top: -.7rem; right: .4rem; z-index: 2; background: #fff3c4; color: #5b4500; font: 600 .7rem var(--mono); padding: .15rem .45rem; border-radius: 3px; border: 1px solid #e6d07a; }
+  .win { background: #f9f9f9; color: #1b1b1b; border: 1px solid #d4d4d4; border-radius: 8px; overflow: hidden; box-shadow: 0 12px 32px -14px #0006; font: 12px/1.3 "Segoe UI", sans-serif; }
+  .win .bar { display: flex; align-items: center; gap: 8px; height: 30px; padding-left: 10px; background: #f3f3f3; }
+  .win .bar .ctl { margin-left: auto; display: flex; }
+  .win .bar .ctl span { width: 40px; text-align: center; color: #555; }
+  .win .grid { display: grid; grid-template-columns: auto 1fr; gap: 5px 10px; padding: 12px 14px 14px; align-items: center; }
+  .win .combo { border: 1px solid #c8c8c8; background: #fff; border-radius: 3px; padding: 3px 6px; display: flex; justify-content: space-between; white-space: nowrap; overflow: hidden; }
+  .win .meter { height: 8px; background: #e3e3e3; overflow: hidden; }
+  .win .meter i { display: block; height: 100%; background: #2e8b57; width: 40%; animation: meter 1.1s infinite alternate ease-in-out; }
+  .win .meter.b i { animation-duration: .8s; animation-delay: -.4s; }
+  .win .wbtn { border: 1px solid #c8c8c8; background: #fdfdfd; border-radius: 3px; padding: 2px 9px; display: inline-block; }
+  .win .row { display: flex; gap: 6px; align-items: center; }
+  .win .status { grid-column: 1 / -1; color: #444; padding-top: 2px; }
+  @keyframes meter { 0% { width: 18%; } 35% { width: 62%; } 60% { width: 34%; } 100% { width: 74%; } }
+  @media (prefers-reduced-motion: reduce) { .win .meter i { animation: none; width: 55%; } }
+
+  /* ================= Variant A: README mirror ================= */
+  .A .title { display: flex; align-items: center; gap: 1rem; margin-top: 1.5rem; }
+  .A .title h1 { margin: 0; }
+  .A .tagline { font-size: 1.35rem; margin: .75rem 0 .5rem; }
+  .A .dl { display: grid; gap: .6rem; justify-items: start; }
+  .A .dl .row { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; align-items: center; }
+  .A .dl p { margin: 0; }
+  .A .note { padding: .7rem .9rem; border: 1px solid var(--color-muted); border-radius: 6px; font-size: .92rem; }
+  .A ol.steps { list-style: none; padding: 0; counter-reset: s; }
+  .A ol.steps li { counter-increment: s; display: grid; grid-template-columns: 2rem 1fr; gap: .25rem .75rem; }
+  .A ol.steps li::before { content: counter(s); width: 1.75rem; height: 1.75rem; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: .9rem; background: var(--fill1); color: var(--on-accent); grid-row: span 2; }
+  .A ol.steps li:nth-child(2)::before { background: var(--fill2); }
+  .A ol.steps li:nth-child(3)::before { background: linear-gradient(90deg, var(--fill1) 50%, var(--fill2) 50%); }
+  .A ol.steps li + li { margin-top: .9rem; }
+  .A .handles li::marker { color: var(--c2); }
+  .A .handles li:nth-child(odd)::marker { color: var(--c1); }
+
+  /* ================= Variant B: hero and blocks ================= */
+  .B .hero { margin-top: 1.5rem; display: grid; gap: 1rem; }
+  .B .hero h1 { font-size: clamp(2rem, 1.2rem + 3.6vw, 3.1rem); font-weight: 700; letter-spacing: -.02em; line-height: 1.08; margin: 0; }
+  .B .say, .B .hear { background-repeat: no-repeat; background-size: 100% .28em; background-position: 0 88%; padding: 0 .05em; }
+  .B .say { background-image: linear-gradient(var(--c1), var(--c1)); }
+  .B .hear { background-image: linear-gradient(var(--c2), var(--c2)); }
+  .B .lead { font-size: 1.15rem; color: var(--color-subtle); margin: 0; }
+  .B .dlcard { margin-top: 1.25rem; display: grid; grid-template-columns: auto 1fr; gap: .4rem 1.25rem; align-items: center; padding: 1.1rem 1.2rem; border-radius: 10px; background: var(--color-bgTranslucent); }
+  .B .dlcard .btn { grid-row: span 2; padding: 0; overflow: hidden; }
+  .B .dlcard .btn .ico { background: var(--c1); align-self: stretch; display: grid; place-items: center; padding: 0 .75rem; }
+  .B .dlcard .btn .lbl { padding: .75rem 1.1rem .75rem 0; display: grid; line-height: 1.2; }
+  .B .dlcard p { margin: 0; }
+  .B .dlcard .extra { grid-column: 1 / -1; border-top: 1px solid var(--color-muted); padding-top: .75rem; margin-top: .4rem; font-size: .92rem; display: grid; gap: .35rem; }
+  .B .strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1rem 0; position: relative; }
+  .B .strip .st { display: grid; gap: .3rem; align-content: start; }
+  .B .strip .n { font-size: 2.6rem; font-weight: 800; line-height: 1; color: var(--say-ink); }
+  .B .strip .st:nth-child(2) .n { color: var(--hear-ink); }
+  .B .strip .st:nth-child(3) .n { background: linear-gradient(90deg, var(--say-ink) 50%, var(--hear-ink) 50%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .B .strip h3 { font-size: 1.05rem; font-weight: 600; margin: 0; }
+  .B .strip p { margin: 0; font-size: .92rem; color: var(--color-subtle); }
+  .B .uses { display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem; margin: 1rem 0; }
+  .B .use { padding: .9rem; border-radius: 8px; border: 1px solid var(--color-muted); display: grid; gap: .25rem; align-content: start; }
+  .B .use .dot { width: .7rem; height: .7rem; border-radius: 50%; background: var(--c1); }
+  .B .use:nth-child(even) .dot { background: var(--c2); }
+  .B .use h3 { font-size: 1rem; font-weight: 600; margin: 0; }
+  .B .use p { margin: 0; font-size: .9rem; color: var(--color-subtle); }
+  .B .handles { display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem 1.5rem; margin: 1rem 0; }
+  .B .handles h3 { font-size: 1rem; font-weight: 600; margin: 0 0 .2rem; }
+  .B .handles p { margin: 0; font-size: .92rem; color: var(--color-subtle); }
+  .B .colophon { display: grid; grid-template-columns: 1.4fr 1fr; gap: 1.5rem; margin-top: 2.75rem; padding-top: 1.5rem; border-top: 1px solid var(--color-muted); }
+  .B .colophon > * { min-width: 0; }
+  .B .colophon h2 { font-size: 1.15rem; margin-top: 0; font-weight: 600; }
+  .B .colophon p { font-size: .95rem; }
+
+  /* ================= Variant D: A, with B's big line and C's diagram drawn like icon (a) ================= */
+  .D .brandrow { display: flex; align-items: center; gap: .75rem; margin-top: 1.5rem; }
+  .D .brandrow h1 { margin: 0; font-size: 1.75rem; font-weight: 600; }
+  .D .bigline { font-size: clamp(2rem, 1.2rem + 3.6vw, 3.1rem); font-weight: 700; letter-spacing: -.02em; line-height: 1.08; margin: 1rem 0; text-wrap: balance; }
+  /* The band runs behind the bottom of the letters, so it takes the pair opposite to the theme's:
+     the bright one under dark text, the dark one under light text. */
+  .D .say, .D .hear { background-repeat: no-repeat; background-size: 100% .28em; background-position: 0 88%; padding: 0 .05em; }
+  .D .say { background-image: linear-gradient(var(--band1), var(--band1)); }
+  .D .hear { background-image: linear-gradient(var(--band2), var(--band2)); }
+  .D .flow { display: grid; grid-template-columns: auto minmax(3.5rem, 1fr) auto; align-items: center; margin: 1.25rem 0 1.75rem; }
+  .D .flow .lanes { height: 7rem; display: flex; flex-direction: column; justify-content: space-between; }
+  .D .flow .lane { height: 2.5rem; display: flex; flex-direction: column; justify-content: center; line-height: 1.2; }
+  .D .flow .lane b { color: var(--say-ink); }
+  .D .flow .lane.h b { color: var(--hear-ink); }
+  .D .flow .lane span, .D .flow .result span { font-size: .85rem; color: var(--color-subtle); }
+  .D .flow svg { width: 100%; height: 7rem; overflow: visible; padding: 0 .6rem; }
+  .D .flow .result { border: 2px solid var(--color-text); border-radius: 6px; padding: .5rem .8rem; line-height: 1.25; overflow-wrap: anywhere; }
+
+  @media (max-width: 30rem) {
+    .D .flow .lane span, .D .flow .result span { font-size: .75rem; }
+    .D .flow .result { white-space: nowrap; padding: .4rem .55rem; }
+    .D .flow .result br, .D .flow .result span { display: none; }
+    .D .flow svg { padding: 0 .3rem; }
+  }
+
+  /* ================= Variant C: duet sheet ================= */
+  .C .top { display: grid; grid-template-columns: auto 1fr; gap: .25rem 1.25rem; align-items: center; margin-top: 1.5rem; }
+  .C .top .ic { grid-row: span 2; }
+  .C .top h1 { margin: 0; font-size: 2rem; font-weight: 600; }
+  .C .top .tag { margin: 0; font-size: 1.15rem; }
+  .C .top .tag .s { color: var(--say-ink); font-weight: 600; }
+  .C .top .tag .h { color: var(--hear-ink); font-weight: 600; }
+  .C .dlrow { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1.25rem; margin-top: 1.5rem; }
+  .C .dlrow .btn { background: var(--c1); color: var(--on-accent); }
+  .C .dlrow .btn:hover { box-shadow: 0 4px 14px -6px var(--c1); }
+  .C .meta { margin: .6rem 0 0; font-family: var(--mono); font-size: .8rem; color: var(--color-subtle); }
+  .C .fine { margin: .6rem 0 0; font-size: .9rem; color: var(--color-subtle); }
+  .C .sheet { margin-top: 2.25rem; }
+  .C .sec { display: grid; grid-template-columns: 9rem minmax(0, 1fr); gap: 1.25rem; padding: 1.4rem 0; border-top: 1px solid var(--color-muted); }
+  .C .sec > h2 { font-size: .78rem; text-transform: uppercase; letter-spacing: .1em; font-weight: 700; margin: .3rem 0 0; color: var(--color-subtle); }
+  .C .sec p:last-child, .C .sec ul:last-child, .C .sec pre:last-child { margin-bottom: 0; }
+  .C .duet { display: grid; grid-template-columns: minmax(0, 1fr) 5rem minmax(0, .8fr); align-items: center; margin-bottom: 1.1rem; }
+  .C .lanes { display: grid; gap: 1.6rem; }
+  .C .lane { border-left: 4px solid var(--c1); padding-left: .65rem; line-height: 1.25; }
+  .C .lane.h { border-color: var(--c2); }
+  .C .lane b { display: block; }
+  .C .lane span { font-size: .85rem; color: var(--color-subtle); }
+  .C .duet svg { width: 100%; height: 6rem; }
+  .C .result { border: 2px solid var(--color-text); border-radius: 6px; padding: .5rem .7rem; line-height: 1.25; }
+  .C .result span { font-size: .85rem; color: var(--color-subtle); }
+  .C ol.inline { padding-left: 1.1rem; }
+  .C .chips { display: flex; flex-wrap: wrap; gap: .45rem; list-style: none; padding: 0; }
+  .C .chips li { margin: 0; padding: .25rem .65rem; border-radius: 999px; font-size: .92rem; border: 1px solid var(--color-muted); }
+  .C .chips li::before { content: ""; display: inline-block; width: .5rem; height: .5rem; border-radius: 50%; background: var(--c1); margin-right: .45rem; vertical-align: 1px; }
+  .C .chips li:nth-child(even)::before { background: var(--c2); }
+  .C dl { display: grid; gap: .8rem; }
+  .C dt { font-weight: 600; }
+  .C dd { margin: 0; color: var(--color-subtle); font-size: .95rem; }
+  .C .qa { display: grid; gap: 1.1rem; }
+  .C .qa h3 { font-size: 1rem; font-weight: 600; margin: 0 0 .25rem; }
+  .C .qa p { margin: 0 0 .4rem; font-size: .95rem; }
+
+  @media (max-width: 40rem) {
+    .B .strip, .B .uses, .B .handles, .B .colophon { grid-template-columns: minmax(0, 1fr); }
+    .B .uses { grid-template-columns: 1fr 1fr; }
+    .B .dlcard { grid-template-columns: 1fr; }
+    .B .dlcard .btn { grid-row: auto; justify-self: start; }
+    .C .sec { grid-template-columns: minmax(0, 1fr); gap: .5rem; }
+    .C .duet { grid-template-columns: minmax(0, 1fr) 3rem minmax(0, .9fr); }
+  }
+
+  /* ---- Prototype switcher: deliberately not part of the design ---- */
+  .proto { position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 50; display: flex; align-items: center; gap: .5rem; padding: .35rem .5rem; border-radius: 999px; background: #111; color: #fff; box-shadow: 0 6px 24px #0007; font: 13px/1 system-ui, sans-serif; width: max-content; max-width: calc(100vw - 24px); flex-wrap: wrap; justify-content: center; border-radius: 18px; }
+  .proto button { background: #333; color: #fff; border: 0; border-radius: 999px; width: 2rem; height: 2rem; cursor: pointer; font-size: 1rem; }
+  .proto button:hover { background: #555; }
+  .proto .lbl { min-width: 9.5rem; text-align: center; font-weight: 600; }
+  @media (max-width: 30rem) { .proto .lbl { min-width: 0; flex: 1; } .proto label { font-size: 0; gap: 0; } .proto select { font-size: 12px; } }
+  .proto select { background: #222; color: #fff; border: 1px solid #444; border-radius: 999px; padding: .3rem .5rem; font-size: 12px; }
+  .proto label { display: flex; align-items: center; gap: .3rem; color: #bbb; }
+</style>
+<script>
+  // Same blocking theme script as the site: resolve the mode before paint.
+  (() => {
+    let saved = null;
+    try { saved = localStorage.getItem("duettino-proto-theme"); } catch {}
+    document.documentElement.dataset.theme = saved ?? (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  })();
+</script>
+</head>
+<body>
+<div class="layout">
+  <header class="header container" id="header"></header>
+  <main class="container" id="main"></main>
+  <footer class="footer">
+    <div class="inner container">
+      <span>Duettino is made by <a href="https://fabiolazzaroni.dev">Fabio Lazzaroni</a></span>
+      <span>
+        <a href="#privacy">Privacy</a> -
+        <a href="https://github.com/fakkio/duettino" class="onlyIcon" aria-label="Duettino on GitHub">
+          <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        </a>
+      </span>
+    </div>
+  </footer>
+</div>
+
+<nav class="proto" aria-label="Prototype switcher">
+  <button type="button" id="prev" aria-label="Previous layout">←</button>
+  <span class="lbl" id="vlabel"></span>
+  <button type="button" id="next" aria-label="Next layout">→</button>
+  <label for="iconSel">icon <select id="iconSel"></select></label>
+  <label for="palSel">palette <select id="palSel"></select></label>
+</nav>
+
+<script src="icons.js"></script>
+<script>
+  const D = window.DUETTINO;
+  const REPO = "https://github.com/fakkio/duettino";
+
+  // ---------------- The copy (English, shared by all three layouts) ----------------
+  const C = {
+    tagline: "Records what you say and what you hear.",
+    intro: "Duettino is a small Windows app that records your microphone and your headphones or speakers at the same time, into one MP3. It was made for calls on headphones, where no recorder in the room can hear the other side.",
+    download: {
+      href: `${REPO}/releases/latest/download/Duettino.exe`,
+      all: `${REPO}/releases`,
+      meta: "0.1.0 beta · ~55 MB · Windows 10/11 64-bit · nothing to install, no .NET needed",
+      beta: `Beta: tested on my own hardware; please <a href="${REPO}/issues">report what breaks</a>.`,
+      smartscreen: [
+        "The download isn't signed yet, so Windows may say <q>Windows protected your PC</q>.",
+        "Click <b>More info</b>, then <b>Run anyway</b>. The release notes list the file's SHA-256.",
+      ],
+    },
+    howTitle: "How to record a Teams or Zoom call with headphones",
+    steps: [
+      ["Choose your microphone as <b>Input</b> and your headphones as <b>Output</b>.", "Any pair works: a headset, a USB microphone with the laptop speakers, an HDMI monitor. They don't have to be the same device."],
+      ["Press <b>Record</b>.", "One meter for each side moves as you talk and listen, and a timer runs."],
+      ["Press <b>Stop</b>.", "A few seconds later the MP3 is in <code>Documents\\Duettino</code>, named after the time you started."],
+    ],
+    howAfter: "Duettino records whatever plays on the Output, so it works the same with Teams, Zoom, Google Meet, Discord, WhatsApp or a call in the browser: no plugin, no bot joining the call, nothing to set up in the call app.",
+    usesTitle: "Calls, and anything else you hear",
+    uses: [
+      ["Calls and meetings", "Teams, Zoom and Meet calls, so you can listen again instead of taking notes."],
+      ["Webinars and online lessons", "The speaker, and the questions you asked."],
+      ["Commentated videos", "Your voice over the video or stream you're watching."],
+      ["Gaming", "The game and your voice in one file, without setting up OBS."],
+      ["Practice over a backing track", "Sing or play along, then hear how the two sound together."],
+      ["Remote podcasts", "Your guest through the call and you through your microphone, in one file."],
+    ],
+    handlesTitle: "What it takes care of",
+    handles: [
+      ["Both sides at the same loudness", "Each side is leveled before mixing, so a quiet microphone doesn't vanish under a loud call. A silent microphone's room noise isn't boosted, and nothing clips."],
+      ["In sync for hours", "The two sides stay together through long calls, silences, system hiccups and the slight speed difference between two devices."],
+      ["Devices that come and go", "Pull the headphone jack or put the earbuds back in their case mid-call: Duettino switches to the Windows default device, and back when yours returns. With no device left, it records silence instead of stopping."],
+      ["No drivers, no Stereo Mix", "It uses Windows' own loopback capture: no virtual cable to install, nothing to change in the sound settings."],
+      ["Crashes don't lose the recording", "If Duettino or Windows closes mid-recording, the next launch offers to recover what was recorded."],
+      ["Safe to close", "Closing during a recording asks <q>Stop and save?</q> first, and waits for the file to be written."],
+      ["Remembers your setup", "Your microphone, headphones and folder are remembered. If one isn't connected, Duettino uses the Windows default and tells you."],
+      ["Says what's wrong", "If Windows blocks the microphone, Duettino says where to allow it, and starts recording it as soon as you do."],
+      ["Any device, any screen", "Any sample rate, mono to surround, and a window that stays sharp at any display scaling."],
+      ["English and Italian", "The window speaks Italian on an Italian Windows, English everywhere else."],
+    ],
+    faq: [
+      ["Why not just use Stereo Mix?", `<p>Stereo Mix exists only on some sound cards, is often missing or silent on Windows 11, and captures the speakers only. You'd still need a second program for your microphone, and a way to line the two up afterwards.</p><p>Duettino captures any output device, headphones included, and records your microphone alongside it, in sync.</p>`],
+      ["Does it work with Bluetooth headphones?", `<p>Yes, with a limit that comes from Bluetooth itself. While the headset's own microphone is in use, by Duettino or by the call app, Windows switches the headset to its hands-free mode, which carries phone-quality sound (often 8 kHz) both ways. The recording then sounds like a phone call.</p><p>For full quality, use another microphone, such as the laptop's own or a USB one, in both Duettino and the call app.</p>`],
+      ["Can I use speakers instead of headphones?", `<p>Yes, but your microphone hears the speakers too, so the other side ends up in the recording twice, a split second apart. Call apps cancel that echo in the call, not in what Duettino records. Headphones avoid it.</p>`],
+      ["Does it upload anything?", `<p>No. Duettino never connects to the network: no account, no telemetry, no analytics. Your recordings stay in the folder you choose. Details on the <a href="#privacy">privacy page</a>.</p>`],
+      ["Windows says it protected my PC. Is it safe?", `<p>That's SmartScreen. It appears for programs that aren't signed with a paid certificate and haven't been downloaded by many people yet. Click <b>More info</b>, then <b>Run anyway</b>.</p><p>To check the file is the one I published, compare the SHA-256 in the release notes with the output of <code>Get-FileHash Duettino.exe</code> in PowerShell. The source code is all <a href="${REPO}">on GitHub</a>, and you can build it yourself.</p>`],
+      ["Why did I get a WAV instead of an MP3?", `<p>Windows N editions leave out the components that make MP3 files. Duettino then saves a WAV and tells you how to fix it: install the Media Feature Pack from <i>Settings › Apps › Optional features</i>.</p>`],
+      ["Is it legal to record a call?", `<p>It depends on where you and the other people are. The simple rule: tell the others you're recording. Unlike the recording built into Teams or Zoom, Duettino notifies nobody, so that part is up to you. This isn't legal advice; check your local law.</p>`],
+      ["How does it compare to OBS, Audacity or Audio Hijack?", `<p><b>OBS</b> can record audio only, after some setup, but it's built for video. <b>Audacity</b> records one device at a time on Windows, so your voice plus the computer's sound needs Stereo Mix or a virtual cable. <b>Audio Hijack</b> does this and much more, but only on a Mac.</p><p>If you were looking for Audio Hijack for Windows, or OBS for audio only, for this one job: Duettino does one thing, two devices, one button, one MP3.</p>`],
+    ],
+    build: `<p>You need the <a href="https://dotnet.microsoft.com/download/dotnet/10.0">.NET 10 SDK</a>.</p><pre><code>git clone ${REPO}\ncd duettino\ndotnet publish src/Duettino -p:PublishProfile=win-x64</code></pre><p>The executable lands in <code>src/Duettino/bin/publish/win-x64/</code>.</p>`,
+    made: `<p>Duettino is designed, tested on real hardware and reviewed by me, <a href="https://fabiolazzaroni.dev">Fabio Lazzaroni</a>. The code is written with AI coding agents (Claude Code). Every decision, with the alternatives turned down, is recorded in <a href="${REPO}/tree/main/docs/adr"><code>docs/adr</code></a>. The workflow (grilling the brief, ADRs, spec → tickets, TDD) runs on <a href="https://github.com/mattpocock/skills">Matt Pocock's skills</a>.</p>`,
+    license: `<p><a href="${REPO}/blob/main/LICENSE">MIT</a>. Use it, change it, share it.</p>`,
+  };
+
+  // ---------------- Shared pieces ----------------
+  const state = (() => {
+    const p = new URLSearchParams(location.search);
+    const v = (p.get("variant") ?? "D").toUpperCase();
+    return {
+      variant: ["A", "B", "C", "D"].includes(v) ? v : "D",
+      icon: D.VARIANTS.some((x) => x.key === p.get("icon")) ? p.get("icon") : "a",
+      palette: D.PALETTES[p.get("palette")] ? p.get("palette") : "theme",
+    };
+  })();
+  const NAMES = { A: "README mirror", B: "Hero and blocks", C: "Duet sheet", D: "Mix of A, B, C" };
+
+  const icon = (size) => D.svg(state.icon, size, { label: false, forceFull: true });
+
+  const gif = () => `
+    <figure class="gif" aria-label="Placeholder for the GIF of Duettino recording">
+      <span class="badge">GIF placeholder · ~10 s loop</span>
+      <div class="win" aria-hidden="true" style="--c1:#D35400;--c2:#16A085">
+        <div class="bar">${D.svg(state.icon, 16, { label: false, forceFull: true })}<span>Duettino</span><span class="ctl"><span>–</span><span>✕</span></span></div>
+        <div class="grid">
+          <span>Input:</span><span class="combo"><span>Microphone (USB Audio Device)</span><span>⌄</span></span>
+          <span></span><span class="meter"><i></i></span>
+          <span>Output:</span><span class="combo"><span>Headphones (Realtek(R) Audio)</span><span>⌄</span></span>
+          <span></span><span class="meter b"><i></i></span>
+          <span>Save to:</span><span class="combo"><span>D:\\Recordings</span><span></span></span>
+          <span></span><span class="row"><span class="wbtn">Change…</span><span class="wbtn">Open folder</span></span>
+          <span></span><span class="row"><span class="wbtn">■ Stop</span><span>00:07</span></span>
+          <span class="status">Recording…</span>
+        </div>
+      </div>
+    </figure>`;
+
+  const dlButton = (inner = `Download Duettino <small>.exe</small>`) =>
+    `<a class="btn" href="${C.download.href}">${inner}</a>`;
+  const allReleases = `<a href="${C.download.all}">All releases</a>`;
+
+  // ---------------- Variant A: the README, top to bottom (D reuses it) ----------------
+  // The two Sources drawn like the chosen icon (a): wavy strands apart on the left, joined into a
+  // two-tone ribbon on the right. viewBox 200x112 stretched horizontally only, so the 8 px strokes
+  // keep touching at +-4.
+  function flowStrand(sign) {
+    const sm = (t) => { const c = Math.min(1, Math.max(0, t)); return c * c * (3 - 2 * c); };
+    const pts = [];
+    for (let x = 0; x <= 200; x += 2) {
+      const sep = 4 + 32 * (1 - sm((x - 8) / 120));
+      const wig = 7 * Math.sin((2 * Math.PI * x) / 70) * (1 - sm((x - 150) / 45));
+      pts.push(`${x},${(56 + sign * sep + wig).toFixed(2)}`);
+    }
+    return "M" + pts.join(" L");
+  }
+  const flow = () => `
+    <div class="flow" aria-hidden="true">
+      <div class="lanes">
+        <div class="lane"><b>What you say</b><span>Input: your microphone</span></div>
+        <div class="lane h"><b>What you hear</b><span>Output: your headphones</span></div>
+      </div>
+      <svg viewBox="0 0 200 112" preserveAspectRatio="none">
+        <path d="${flowStrand(1)}" fill="none" stroke="var(--c2)" stroke-width="8" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+        <path d="${flowStrand(-1)}" fill="none" stroke="var(--c1)" stroke-width="8" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+      </svg>
+      <div class="result"><b>One MP3</b><br><span>in Documents\\Duettino</span></div>
+    </div>`;
+
+  function variantD() { return variantA(true); }
+
+  function variantA(d = false) {
+    const top = d
+      ? `<div class="brandrow">${icon(56)}<h1>Duettino</h1></div>
+      <p class="bigline">Records <span class="say">what you say</span> and <span class="hear">what you hear</span>.</p>`
+      : `<div class="title">${icon(64)}<h1>Duettino</h1></div>
+      <p class="tagline">${C.tagline}</p>`;
+    return `
+    <div class="A${d ? " D" : ""}">
+      ${top}
+      <p>${C.intro}</p>
+      ${gif()}
+
+      <section id="download"><h2>Download</h2>
+        <div class="dl">
+          <div class="row">${dlButton()}${allReleases}</div>
+          <p class="muted small">${C.download.meta}</p>
+          <p>${C.download.beta}</p>
+          <p class="note">${C.download.smartscreen.join(" ")}</p>
+        </div>
+      </section>
+
+      <section><h2>${C.howTitle}</h2>
+        ${d ? flow() : ""}
+        <ol class="steps">${C.steps.map(([a, b]) => `<li><span>${a}</span><span class="muted">${b}</span></li>`).join("")}</ol>
+        <p>${C.howAfter}</p>
+      </section>
+
+      <section><h2>${C.usesTitle}</h2>
+        <ul>${C.uses.map(([a, b]) => `<li><b>${a}</b>: ${b}</li>`).join("")}</ul>
+      </section>
+
+      <section><h2>${C.handlesTitle}</h2>
+        <ul class="handles">${C.handles.map(([a, b]) => `<li><b>${a}.</b> ${b}</li>`).join("")}</ul>
+      </section>
+
+      <section><h2>FAQ</h2>
+        ${C.faq.map(([q, a], i) => `<details id="faq-a-${i}"><summary>${q}</summary><div>${a}</div></details>`).join("")}
+      </section>
+
+      <section><h2>Build from source</h2>${C.build}</section>
+      <section><h2>How it's made</h2>${C.made}</section>
+      <section><h2>License</h2>${C.license}</section>
+    </div>`;
+  }
+
+  // ---------------- Variant B: a product page in blocks ----------------
+  function variantB() {
+    return `
+    <div class="B">
+      <div class="hero">
+        <h1>Records <span class="say">what you say</span> and <span class="hear">what you hear</span>.</h1>
+        <p class="lead">${C.intro}</p>
+      </div>
+      <div class="dlcard" id="download">
+        <a class="btn" href="${C.download.href}"><span class="ico" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 20h16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="lbl">Download<small>Duettino.exe</small></span></a>
+        <p class="small muted">${C.download.meta}</p>
+        <p class="small">${allReleases}</p>
+        <div class="extra"><span>${C.download.beta}</span><span class="muted">${C.download.smartscreen.join(" ")}</span></div>
+      </div>
+      ${gif()}
+
+      <section><h2>${C.howTitle}</h2>
+        <div class="strip">${C.steps.map(([a, b], i) => `<div class="st"><span class="n">${i + 1}</span><h3>${a}</h3><p>${b}</p></div>`).join("")}</div>
+        <p>${C.howAfter}</p>
+      </section>
+
+      <section><h2>${C.usesTitle}</h2>
+        <div class="uses">${C.uses.map(([a, b]) => `<div class="use"><span class="dot"></span><h3>${a}</h3><p>${b}</p></div>`).join("")}</div>
+      </section>
+
+      <section><h2>${C.handlesTitle}</h2>
+        <div class="handles">${C.handles.map(([a, b]) => `<div><h3>${a}</h3><p>${b}</p></div>`).join("")}</div>
+      </section>
+
+      <section><h2>Questions</h2>
+        ${C.faq.map(([q, a], i) => `<details id="faq-b-${i}"><summary>${q}</summary><div>${a}</div></details>`).join("")}
+      </section>
+
+      <div class="colophon">
+        <section><h2>How it's made</h2>${C.made}</section>
+        <div>
+          <section><h2>License</h2>${C.license}</section>
+          <section><h2>Build from source</h2>${C.build}</section>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ---------------- Variant C: download first, then a labeled sheet ----------------
+  function variantC() {
+    return `
+    <div class="C">
+      <div class="top">
+        <span class="ic">${icon(80)}</span>
+        <h1>Duettino</h1>
+        <p class="tag">Records <span class="s">what you say</span> and <span class="h">what you hear</span>.</p>
+      </div>
+      <div class="dlrow" id="download">${dlButton(`Download for Windows`)}${allReleases}</div>
+      <p class="meta">${C.download.meta}</p>
+      <p class="fine">${C.download.beta} ${C.download.smartscreen.join(" ")}</p>
+      ${gif()}
+
+      <div class="sheet">
+        <section class="sec"><h2>What it is</h2><div><p>${C.intro}</p></div></section>
+
+        <section class="sec"><h2>How it works</h2><div>
+          <div class="duet" aria-hidden="true">
+            <div class="lanes">
+              <div class="lane"><b>What you say</b><span>Input: your microphone</span></div>
+              <div class="lane h"><b>What you hear</b><span>Output: your headphones</span></div>
+            </div>
+            <svg viewBox="0 0 80 96" preserveAspectRatio="none"><path d="M0 22 C40 22 40 44 80 44" fill="none" stroke="var(--c1)" stroke-width="4" vector-effect="non-scaling-stroke"/><path d="M0 74 C40 74 40 52 80 52" fill="none" stroke="var(--c2)" stroke-width="4" vector-effect="non-scaling-stroke"/></svg>
+            <div class="result"><b>One MP3</b><br><span>in Documents\\Duettino</span></div>
+          </div>
+          <h3 style="font-size:1.05rem;font-weight:600;margin:0 0 .4rem">${C.howTitle}</h3>
+          <ol class="inline">${C.steps.map(([a, b]) => `<li>${a} <span class="muted">${b}</span></li>`).join("")}</ol>
+          <p>${C.howAfter}</p>
+        </div></section>
+
+        <section class="sec"><h2>Uses</h2><div>
+          <ul class="chips">${C.uses.map(([a]) => `<li>${a}</li>`).join("")}</ul>
+          <p class="muted small" style="margin-top:.75rem">Anything playing on your headphones or speakers, together with your microphone.</p>
+        </div></section>
+
+        <section class="sec"><h2>Takes care of</h2><div>
+          <dl>${C.handles.map(([a, b]) => `<div><dt>${a}</dt><dd>${b}</dd></div>`).join("")}</dl>
+        </div></section>
+
+        <section class="sec"><h2>FAQ</h2><div class="qa">
+          ${C.faq.map(([q, a]) => `<div><h3>${q}</h3>${a}</div>`).join("")}
+        </div></section>
+
+        <section class="sec"><h2>Build</h2><div>${C.build}</div></section>
+        <section class="sec"><h2>How it's made</h2><div>${C.made}</div></section>
+        <section class="sec"><h2>License</h2><div>${C.license}</div></section>
+      </div>
+    </div>`;
+  }
+
+  // ---------------- Header, theme toggle, switcher ----------------
+  function header() {
+    const brand = state.variant === "B" ? `<a class="brand onlyIcon" href="#" style="display:flex">${icon(28)}<span>Duettino</span></a>` : "";
+    return `${brand}<span class="spacer"></span>
+      <nav class="lang" aria-label="Language"><span aria-current="page" lang="en">EN</span><span class="sep">/</span><a href="#it" lang="it" hreflang="it">IT</a></nav>
+      <button type="button" class="toggle" id="toggle" aria-pressed="false" aria-label="Switch to dark theme">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor" aria-hidden="true" class="icon">
+          <mask id="darkToggleMask"><rect x="0" y="0" width="100%" height="100%" fill="white"></rect><circle class="maskCircle" cx="100%" cy="0%" r="9" fill="black"></circle></mask>
+          <circle class="centerCircle" cx="12" cy="12" r="5" mask="url(#darkToggleMask)" fill="currentColor"></circle>
+          <g class="rays" stroke="currentColor"><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></g>
+        </svg>
+      </button>`;
+  }
+
+  function syncToggle() {
+    const dark = document.documentElement.dataset.theme === "dark";
+    const b = document.getElementById("toggle");
+    b.setAttribute("aria-pressed", String(dark));
+    b.setAttribute("aria-label", dark ? "Switch to light theme" : "Switch to dark theme");
+  }
+
+  // With the per-theme palette the favicon is one SVG carrying its own dark-mode rule, so the tab
+  // follows the browser's theme (the tab strip is browser chrome, not the page). The .ico stays pumpkin.
+  function favicon() {
+    let src = D.svg(state.icon, 32, { label: false, forceFull: true });
+    if (state.palette === "theme") {
+      const L = D.PALETTES.pumpkin, K = D.PALETTES.carrot;
+      const rules = (p) => [1, 2, 3].map((n) => `.fill${n}{fill:${p["c" + n]}}.stroke${n}{stroke:${p["c" + n]}}`).join("");
+      src = src.replace(/(fill|stroke)="var\(--c(\d)\)"/g, 'class="$1$2"')
+        .replace(/(<svg[^>]*>)/, `$1<style>${rules(L)}@media (prefers-color-scheme: dark){${rules(K)}}</style>`);
+    } else {
+      const p = D.PALETTES[state.palette];
+      src = src.replaceAll("var(--c1)", p.c1).replaceAll("var(--c2)", p.c2).replaceAll("var(--c3)", p.c3);
+    }
+    document.getElementById("favicon").href = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(src);
+  }
+
+  function render() {
+    const rootStyle = document.documentElement.style;
+    if (state.palette === "theme") ["--c1", "--c2", "--c3"].forEach((v) => rootStyle.removeProperty(v));
+    else D.applyPalette(document.documentElement, state.palette);
+    document.getElementById("header").innerHTML = header();
+    document.getElementById("main").innerHTML = { A: variantA, B: variantB, C: variantC, D: variantD }[state.variant]();
+    document.getElementById("vlabel").textContent = `${state.variant} · ${NAMES[state.variant]}`;
+    document.getElementById("iconSel").value = state.icon;
+    document.getElementById("palSel").value = state.palette;
+    favicon();
+    syncToggle();
+    document.getElementById("toggle").addEventListener("click", () => {
+      const root = document.documentElement;
+      root.dataset.theme = root.dataset.theme === "dark" ? "light" : "dark";
+      try { localStorage.setItem("duettino-proto-theme", root.dataset.theme); } catch {}
+      syncToggle();
+    });
+    history.replaceState(null, "", "?" + new URLSearchParams(state));
+  }
+
+  document.getElementById("iconSel").innerHTML = D.VARIANTS.map((v) => `<option value="${v.key}">${v.key} · ${v.name}</option>`).join("");
+  document.getElementById("palSel").innerHTML = `<option value="theme">Per theme (pumpkin light / carrot dark)</option>` + Object.entries(D.PALETTES).map(([k, p]) => `<option value="${k}">${p.name}</option>`).join("");
+  const keys = ["A", "B", "C", "D"];
+  const step = (d) => { state.variant = keys[(keys.indexOf(state.variant) + d + keys.length) % keys.length]; render(); };
+  document.getElementById("prev").onclick = () => step(-1);
+  document.getElementById("next").onclick = () => step(1);
+  document.getElementById("iconSel").onchange = (e) => { state.icon = e.target.value; render(); };
+  document.getElementById("palSel").onchange = (e) => { state.palette = e.target.value; render(); };
+  addEventListener("keydown", (e) => {
+    if (e.target.closest("input, textarea, select, [contenteditable]")) return;
+    if (e.key === "ArrowLeft") step(-1);
+    if (e.key === "ArrowRight") step(1);
+  });
+  render();
+</script>
+</body>
+</html>

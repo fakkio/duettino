@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Duettino Icon Variants</title>
+<!--
+  PROTOTYPE (throwaway). Question: which icon should Duettino ship with?
+  Five variants side by side at 16–256 px, on light and dark, and pinned in a
+  simulated Windows 11 taskbar and title bar. Palette and the size below which the
+  simplified drawing kicks in are switchable (also via ?palette=…&small=…).
+  Open by double-clicking; no server needed.
+-->
+<style>
+  /* Layout: one row per variant, light and dark panels side by side; then the taskbars. */
+  :root {
+    --bg: #f6f7f9;
+    --fg: #1d232b;
+    --muted: #5d6875;
+    --line: #dde2e8;
+    --panel: #ffffff;
+    --chip: #ffffff;
+    --font: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+    --mono: "Cascadia Mono", Consolas, ui-monospace, monospace;
+    /* The fixed sample grounds: what Windows actually paints behind an icon. */
+    --win-light: #ffffff;
+    --win-dark: #202020;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg: #15181c; --fg: #e8ecf1; --muted: #9aa5b2; --line: #2c333b; --panel: #1c2026; --chip: #222830; color-scheme: dark; }
+  }
+  :root[data-theme="dark"] { --bg: #15181c; --fg: #e8ecf1; --muted: #9aa5b2; --line: #2c333b; --panel: #1c2026; --chip: #222830; color-scheme: dark; }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 var(--font); }
+  .wrap { max-width: 78rem; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+  h1 { font-size: 1.6rem; font-weight: 600; margin: 0 0 .25rem; text-wrap: balance; }
+  h2 { font-size: 1.15rem; font-weight: 600; margin: 2.5rem 0 .75rem; }
+  .lede { color: var(--muted); margin: 0 0 1.25rem; max-width: 65ch; }
+  code { font-family: var(--mono); font-size: .9em; }
+
+  .controls { display: flex; flex-wrap: wrap; gap: .75rem 1.5rem; align-items: center; padding: .75rem 1rem; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; position: sticky; top: 0; z-index: 5; }
+  .controls fieldset { border: 0; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+  .controls legend { float: left; margin-right: .5rem; color: var(--muted); font-size: .85rem; text-transform: uppercase; letter-spacing: .06em; }
+  .chip { display: inline-flex; align-items: center; gap: .4rem; padding: .3rem .65rem; border: 1px solid var(--line); border-radius: 999px; background: var(--chip); cursor: pointer; font-size: .9rem; }
+  .chip:has(input:checked) { border-color: var(--fg); box-shadow: inset 0 0 0 1px var(--fg); }
+  .chip input { position: absolute; opacity: 0; pointer-events: none; }
+  .chip:has(input:focus-visible) { outline: 2px solid var(--fg); outline-offset: 2px; }
+  .sw { width: .8rem; height: .8rem; border-radius: 50%; display: inline-block; }
+  .hex { font-family: var(--mono); font-size: .8rem; color: var(--muted); }
+
+  .variant { display: grid; grid-template-columns: 14rem 1fr; gap: 1rem 1.5rem; padding: 1.25rem 0; border-top: 1px solid var(--line); }
+  .variant h3 { margin: 0; font-size: 1.05rem; font-weight: 600; }
+  .variant h3 b { font-family: var(--mono); font-weight: 600; margin-right: .35rem; color: var(--muted); }
+  .variant p { margin: .3rem 0 0; color: var(--muted); font-size: .9rem; }
+  .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; min-width: 0; }
+  .panel { border-radius: 8px; padding: 1rem; display: grid; grid-template-columns: auto 1fr; gap: 1rem; align-items: end; border: 1px solid var(--line); }
+  .panel.light { background: var(--win-light); color: #4a525c; }
+  .panel.dark { background: var(--win-dark); color: #a9b0b8; border-color: #333; }
+  .sizes { display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap; }
+  .size { display: grid; justify-items: center; gap: .35rem; font-size: .72rem; font-family: var(--mono); }
+  .size svg { image-rendering: pixelated; }
+  .big { justify-self: end; width: 100%; max-width: 256px; }
+  .big svg { width: 100%; height: auto; }
+
+  .tb-block { display: grid; gap: .5rem; margin-bottom: 1.25rem; }
+  .tb-scroll { overflow-x: auto; border-radius: 8px; border: 1px solid var(--line); }
+  .desktop { min-width: 1000px; height: 150px; display: flex; flex-direction: column; justify-content: flex-end; }
+  .desktop.light { background: linear-gradient(160deg, #cfdcec, #e9eef5 60%, #d7e2ef); }
+  .desktop.dark { background: linear-gradient(160deg, #0d1b2e, #1a2638 60%, #0f1a29); }
+  .taskbar { height: 48px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 0 12px; font: 12px/1.25 "Segoe UI", sans-serif; }
+  .light .taskbar { background: rgba(243, 243, 243, .92); border-top: 1px solid #e3e3e3; color: #1b1b1b; --pill: #8a8a8a; --accent: #005fb8; --hover: rgba(255,255,255,.75); }
+  .dark .taskbar { background: rgba(32, 32, 32, .94); border-top: 1px solid #2f2f2f; color: #fff; --pill: #9a9a9a; --accent: #4cc2ff; --hover: rgba(255,255,255,.07); }
+  .apps { display: flex; gap: 4px; grid-column: 2; }
+  .tbtn { width: 40px; height: 40px; border-radius: 4px; display: grid; place-items: center; position: relative; }
+  .tbtn.running::after, .tbtn.active::after { content: ""; position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%); height: 3px; border-radius: 2px; width: 6px; background: var(--pill); }
+  .tbtn.active { background: var(--hover); }
+  .tbtn.active::after { width: 16px; background: var(--accent); }
+  .tbtn .tag { position: absolute; top: -20px; font: 600 11px var(--mono); color: inherit; opacity: .8; }
+  .desktop .tbtn .tag { color: #fff; text-shadow: 0 1px 2px #0008; }
+  .desktop.light .tbtn .tag { color: #223; text-shadow: none; }
+  .tray { grid-column: 3; justify-self: end; display: flex; align-items: center; gap: 14px; }
+  .clock { text-align: right; }
+
+  .titlebars { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .75rem; }
+  @media (max-width: 70rem) { .titlebars { grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); } }
+  .zoom { width: 64px; height: 64px; image-rendering: pixelated; }
+  .win { border-radius: 8px; overflow: hidden; border: 1px solid var(--line); }
+  .titlebar { height: 32px; display: flex; align-items: center; gap: 10px; padding-left: 12px; font: 12px "Segoe UI", sans-serif; }
+  .titlebar .ctl { margin-left: auto; display: flex; }
+  .titlebar .ctl span { width: 46px; text-align: center; opacity: .8; }
+  .win.light .titlebar { background: #f3f3f3; color: #1b1b1b; }
+  .win.dark .titlebar { background: #202020; color: #fff; }
+  .win .body { height: 46px; }
+  .win.light .body { background: #fafafa; }
+  .win.dark .body { background: #272727; }
+  .win.dark { border-color: #333; }
+
+  @media (max-width: 60rem) {
+    .variant { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 44rem) {
+    .panels { grid-template-columns: 1fr; }
+    .panel { grid-template-columns: 1fr; }
+    .big { justify-self: start; max-width: 160px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap" id="root">
+  <h1>Duettino icon variants</h1>
+  <p class="lede">Prototype. Each icon uses one color per Source: <strong>what you say</strong> and <strong>what you hear</strong>; a third color appears only where the two overlap. Below the size threshold the simplified 16 px drawing is used, as the <code>.ico</code> would.</p>
+
+  <form class="controls" id="controls">
+    <fieldset id="palettes"><legend>Palette</legend></fieldset>
+    <fieldset id="threshold"><legend>Simplified drawing</legend></fieldset>
+  </form>
+
+  <section id="variants" aria-label="Variants at each size"></section>
+
+  <h2>Windows 11 taskbar, 100% scaling (24 px icons)</h2>
+  <p class="lede">All five pinned between ordinary apps; <b>a</b> is shown as the open, focused window, the others as running.</p>
+  <div id="taskbars"></div>
+
+  <h2>Window title bar (16 px)</h2>
+  <div class="titlebars" id="titlebars"></div>
+</div>
+
+<script src="icons.js"></script>
+<script>
+  const D = window.DUETTINO;
+  const root = document.documentElement;
+  const params = new URLSearchParams(location.search);
+  const state = {
+    palette: D.PALETTES[params.get("palette")] ? params.get("palette") : "pumpkin",
+    small: params.get("small") ?? "0",
+  };
+
+  // Placeholder glyphs for the other pinned apps: plain, so they don't compete.
+  const APPS = {
+    start: (dark) => `<svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><g fill="${dark ? "#4cc2ff" : "#0078d4"}"><rect x="2" y="2" width="9.5" height="9.5" rx="1"/><rect x="12.5" y="2" width="9.5" height="9.5" rx="1"/><rect x="2" y="12.5" width="9.5" height="9.5" rx="1"/><rect x="12.5" y="12.5" width="9.5" height="9.5" rx="1"/></g></svg>`,
+    search: () => `<svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M15 15 L20.5 20.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+    folder: () => `<svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 6.5 a1.5 1.5 0 0 1 1.5 -1.5 h5.5 l2 2 h9.5 a1.5 1.5 0 0 1 1.5 1.5 v1.5 H2Z" fill="#e8a317"/><rect x="2" y="9" width="20" height="11" rx="1.5" fill="#ffc83d"/></svg>`,
+    browser: () => `<svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#1b8fd6"/><path d="M5 15 a8 6 0 0 1 14 -4 a5 4 0 0 1 -8 3" fill="#38c27a"/></svg>`,
+    meet: () => `<svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="3" fill="#5b5fc7"/><circle cx="9" cy="11" r="2.4" fill="#fff"/><circle cx="15.5" cy="11" r="2.4" fill="#d6d7f5"/><rect x="5.5" y="14.5" width="13" height="2.6" rx="1.3" fill="#fff"/></svg>`,
+    mail: () => `<svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2" fill="#0a64c8"/><path d="M3 6.5 L12 13 L21 6.5" fill="none" stroke="#fff" stroke-width="1.6"/></svg>`,
+  };
+
+  function renderControls() {
+    const pal = document.getElementById("palettes");
+    pal.innerHTML = '<legend>Palette</legend>' + Object.entries(D.PALETTES).map(([k, p]) => `
+      <label class="chip"><input type="radio" name="palette" id="pal-${k}" value="${k}" ${k === state.palette ? "checked" : ""}>
+        <span class="sw" style="background:${p.c1}"></span><span class="sw" style="background:${p.c2}"></span><span class="sw" style="background:${p.c3}"></span>
+        ${p.name} <span class="hex">${p.c1} ${p.c2} ${p.c3}</span></label>`).join("");
+    const th = document.getElementById("threshold");
+    const opts = [["16", "≤ 16 px"], ["20", "≤ 20 px"], ["24", "≤ 24 px"], ["0", "never"]];
+    th.innerHTML = '<legend>Simplified drawing</legend>' + opts.map(([v, l]) => `
+      <label class="chip"><input type="radio" name="small" id="small-${v}" value="${v}" ${v === state.small ? "checked" : ""}>${l}</label>`).join("");
+  }
+
+  function renderVariants() {
+    const t = Number(state.small);
+    const sizes = (theme) => `
+      <div class="sizes">
+        <div class="size">${D.svg(window.__k, 16, { forceFull: true })}<span>16 full</span></div>
+        <div class="size"><canvas class="zoom" width="16" height="16" data-k="${window.__k}"></canvas><span>16* ×4</span></div>
+        ${[16, 20, 24, 32, 48].map((s) => `<div class="size">${D.svg(window.__k, s, { smallUpTo: t })}<span>${s}${s <= t ? "*" : ""}</span></div>`).join("")}
+      </div>
+      <div class="big">${D.svg(window.__k, 256)}</div>`;
+    document.getElementById("variants").innerHTML = D.VARIANTS.map((v) => {
+      window.__k = v.key;
+      return `
+      <article class="variant">
+        <div><h3><b>${v.key}</b>${v.name}</h3><p>${v.note}</p></div>
+        <div class="panels">
+          <div class="panel light">${sizes("light")}</div>
+          <div class="panel dark">${sizes("dark")}</div>
+        </div>
+      </article>`;
+    }).join("") + `<p class="lede" style="margin-top:.5rem">* simplified drawing at that size.</p>`;
+  }
+
+  function taskbar(theme) {
+    const dark = theme === "dark";
+    const t = Number(state.small);
+    const btn = (inner, cls = "", tag = "") => `<div class="tbtn ${cls}">${tag ? `<span class="tag">${tag}</span>` : ""}${inner}</div>`;
+    const duettino = D.VARIANTS.map((v, i) => btn(D.svg(v.key, 24, { smallUpTo: t }), i === 0 ? "active" : "running", v.key)).join("");
+    return `
+      <div class="tb-block">
+        <div class="tb-scroll"><div class="desktop ${theme}">
+          <div class="taskbar">
+            <div class="apps">
+              ${btn(APPS.start(dark))}${btn(APPS.search())}${btn(APPS.folder(), "running")}${btn(APPS.browser(), "running")}${btn(APPS.meet(), "running")}
+              ${duettino}
+              ${btn(APPS.mail())}
+            </div>
+            <div class="tray">
+              <span aria-hidden="true">⌃</span><span aria-hidden="true">📶</span><span aria-hidden="true">🔊</span>
+              <div class="clock">10:42<br>06/10/2026</div>
+            </div>
+          </div>
+        </div></div>
+      </div>`;
+  }
+
+  function renderTaskbars() {
+    document.getElementById("taskbars").innerHTML = taskbar("light") + taskbar("dark");
+  }
+
+  function renderTitlebars() {
+    document.getElementById("titlebars").innerHTML = ["light", "dark"].flatMap((theme) =>
+      D.VARIANTS.map((v) => `
+        <div class="win ${theme}">
+          <div class="titlebar">${D.svg(v.key, 16, { smallUpTo: Number(state.small) })}<span>Duettino</span><span class="ctl"><span>–</span><span>□</span><span>✕</span></span></div>
+          <div class="body"></div>
+        </div>`)).join("");
+  }
+
+  // Rasterize the 16 px drawing at true 16×16 pixels, then show it 4× enlarged, pixel for pixel.
+  function renderZooms() {
+    const p = D.PALETTES[state.palette];
+    document.querySelectorAll("canvas.zoom").forEach((c) => {
+      const src = D.svg(c.dataset.k, 16, { forceSmall: true })
+        .replaceAll("var(--c1)", p.c1).replaceAll("var(--c2)", p.c2).replaceAll("var(--c3)", p.c3);
+      const img = new Image();
+      img.onload = () => { const g = c.getContext("2d"); g.clearRect(0, 0, 16, 16); g.drawImage(img, 0, 0, 16, 16); };
+      img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(src);
+    });
+  }
+
+  function render() {
+    D.applyPalette(root, state.palette);
+    renderVariants();
+    renderZooms();
+    renderTaskbars();
+    renderTitlebars();
+    const q = new URLSearchParams({ palette: state.palette, small: state.small });
+    history.replaceState(null, "", "?" + q);
+  }
+
+  renderControls();
+  render();
+  document.getElementById("controls").addEventListener("change", (e) => {
+    if (e.target.name === "palette") state.palette = e.target.value;
+    if (e.target.name === "small") state.small = e.target.value;
+    render();
+  });
+</script>
+</body>
+</html>

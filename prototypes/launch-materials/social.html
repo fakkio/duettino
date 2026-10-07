@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Duettino Social Image</title>
+<!--
+  PROTOTYPE (throwaway). Draft of the 1280x640 social image (GitHub social preview and og:image),
+  with the chosen icon (a, full drawing) and palette (carrot & turquoise). Two grounds to compare,
+  shown full size and as they appear in a shared link. ?export=dark|light renders the bare card
+  at 1280x640 for a screenshot. Open by double-clicking; no server needed.
+-->
+<style>
+  :root {
+    --bg: #f4f6f8; --fg: #1f2a35; --muted: #5f6b77; --line: #d9dee4; --panel: #ffffff;
+    --font: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #161a1f; --fg: #e7ebef; --muted: #9aa4ae; --line: #2b323a; --panel: #1d232a; color-scheme: dark; } }
+  :root[data-theme="dark"] { --bg: #161a1f; --fg: #e7ebef; --muted: #9aa4ae; --line: #2b323a; --panel: #1d232a; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 var(--font); }
+  .wrap { max-width: 72rem; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+  h1 { font-size: 1.6rem; font-weight: 600; margin: 0 0 .25rem; }
+  h2 { font-size: 1.1rem; font-weight: 600; margin: 2rem 0 .75rem; }
+  .lede { color: var(--muted); margin: 0 0 1rem; max-width: 65ch; }
+
+  /* The scaled frames: the card is always laid out at 1280x640 and scaled to the frame's width. */
+  .frame { width: 100%; aspect-ratio: 2 / 1; position: relative; overflow: hidden; border-radius: 6px; border: 1px solid var(--line); }
+  .frame > .card { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+
+  .previews { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr)); gap: 1.25rem; }
+  .embed { background: var(--panel); border: 1px solid var(--line); border-left: 4px solid #1ABC9C; border-radius: 6px; padding: .75rem .9rem; display: grid; gap: .35rem; max-width: 26rem; }
+  .embed .site { font-size: .78rem; color: var(--muted); }
+  .embed .t { font-weight: 600; color: #2980b9; }
+  .embed .d { font-size: .88rem; }
+  .gh { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; max-width: 26rem; }
+  .gh .meta { padding: .6rem .8rem; font-size: .85rem; }
+  .gh .meta b { display: block; }
+  .cap { font-size: .8rem; color: var(--muted); margin-top: .35rem; }
+
+  /* ---- The card itself, in px at 1280x640 ---- */
+  .card { width: 1280px; height: 640px; overflow: hidden; position: relative; font-family: "Segoe UI", system-ui, sans-serif;
+    --c1: #E67E22; --c2: #1ABC9C; }
+  .card.dark { background: #2C3E50; color: #ECF0F1; --sub: #BDC3C7; }
+  .card.light { background: #ECF0F1; color: #2C3E50; --sub: #7F8C8D; }
+  .card .brand { position: absolute; left: 80px; top: 72px; display: flex; align-items: center; gap: 28px; }
+  .card .brand span { font-size: 76px; font-weight: 600; letter-spacing: -1px; }
+  .card .line { position: absolute; left: 80px; top: 214px; margin: 0; font-size: 66px; font-weight: 700; line-height: 1.12; letter-spacing: -1.5px; }
+  .card .say, .card .hear { background-repeat: no-repeat; background-size: 100% 18px; background-position: 0 86%; }
+  .card .say { background-image: linear-gradient(var(--c1), var(--c1)); }
+  .card .hear { background-image: linear-gradient(var(--c2), var(--c2)); }
+  .card .url { position: absolute; left: 80px; top: 398px; font-size: 27px; color: var(--sub); }
+  .card .strands { position: absolute; left: 0; bottom: 0; }
+
+  /* "below": the underline moves under the letters, so no glyph sits on a colored band and only
+     band-vs-ground contrast counts. Needs more line height to clear the second line's capitals. */
+  .card.below .brand { top: 58px; }
+  .card.below .line { top: 192px; line-height: 1.32; }
+  .card.below .say, .card.below .hear { background: none; text-decoration-line: underline; text-decoration-thickness: 12px; text-underline-offset: 19px; text-decoration-skip-ink: none; }
+  .card.below .say { text-decoration-color: var(--c1); }
+  .card.below .hear { text-decoration-color: var(--c2); }
+  .card.below .url { top: 406px; }
+  .card.below .strands { transform: translateY(22px); }
+
+  .pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr)); gap: 1rem 1.25rem; }
+  .pair h3 { font-size: .95rem; font-weight: 600; margin: 0 0 .4rem; }
+  .pair .cap b { color: var(--fg); }
+  .tag { display: inline-block; font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: .1rem .45rem; border-radius: 3px; background: #16A085; color: #fff; margin-left: .4rem; vertical-align: 2px; }
+
+  body.export { background: none; }
+  body.export .wrap { display: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Duettino social image</h1>
+  <p class="lede">Prototype draft, 1280×640: GitHub's social preview and the landing's <code>og:image</code>. Icon (a), full drawing; carrot &amp; turquoise or pumpkin &amp; green sea. The two strands of the icon run along the bottom, apart on the left and joined on the right.</p>
+
+  <h2>Underline behind the letters vs under them</h2>
+  <p class="lede">Contrast ratios (WCAG; 3:1 is the minimum for large text and graphics). <i>Band</i>: the colored underline against the ground. <i>Letters</i>: the bottom of the letters against the band they sit on; under-the-letters drafts have none.</p>
+  <div class="pair">
+    <div><h3>Carrot &amp; turquoise, midnight, under the letters</h3><div class="frame" data-bg="dark" data-pal="carrot" data-below="1"></div><p class="cap">Band <b>3.86 / 4.56</b> · letters: none on a band.</p></div>
+    <div><h3>Carrot &amp; turquoise, midnight, behind (current)</h3><div class="frame" data-bg="dark" data-pal="carrot"></div><p class="cap">Band 3.86 / 4.56 · letters <b>2.48 / 2.10 ✗</b></p></div>
+    <div><h3>Pumpkin &amp; green sea, midnight, behind <span class="tag">chosen · dark</span></h3><div class="frame" data-bg="dark" data-pal="pumpkin"></div><p class="cap">Band <b>2.63 ✗</b> / 3.35 · letters 3.63 / <b>2.86 ✗</b></p></div>
+    <div><h3>Pumpkin &amp; green sea, clouds, under the letters</h3><div class="frame" data-bg="light" data-pal="pumpkin" data-below="1"></div><p class="cap">Band 3.63 / <b>2.86 ✗</b> · letters: none on a band.</p></div>
+    <div><h3>Pumpkin &amp; green sea, clouds, behind</h3><div class="frame" data-bg="light" data-pal="pumpkin"></div><p class="cap">Band 3.63 / <b>2.86 ✗</b> · letters <b>2.63 ✗</b> / 3.35</p></div>
+    <div><h3>Carrot &amp; turquoise, clouds, behind <span class="tag">chosen · light</span></h3><div class="frame" data-bg="light" data-pal="carrot"></div><p class="cap">Band <b>2.48 ✗ / 2.10 ✗</b> · letters 3.86 / 4.56</p></div>
+  </div>
+
+  <h2>The chosen drafts as a shared link</h2>
+  <div class="previews">
+    <div>
+      <div class="embed">
+        <span class="site">duettino.fabiolazzaroni.dev</span>
+        <span class="t">Duettino: records what you say and what you hear</span>
+        <span class="d">A small Windows app that records your microphone and your headphones at the same time, into one MP3.</span>
+        <div class="frame" data-bg="dark" data-pal="pumpkin"></div>
+      </div>
+      <p class="cap">Chat embed (Discord, Slack), ~400 px wide.</p>
+    </div>
+    <div>
+      <div class="gh">
+        <div class="frame" data-bg="dark" data-pal="pumpkin" style="border:0;border-radius:0"></div>
+        <div class="meta"><b>fakkio/duettino</b><span>Lightweight Windows recorder: mix any input device with whatever is playing on any output device into one MP3.</span></div>
+      </div>
+      <p class="cap">GitHub repository card, ~400 px wide.</p>
+    </div>
+    <div>
+      <div class="gh" style="max-width:16rem">
+        <div class="frame" data-bg="light" data-pal="carrot" style="border:0;border-radius:0"></div>
+      </div>
+      <p class="cap">Small thumbnail, light variant, ~250 px.</p>
+    </div>
+  </div>
+</div>
+
+<script src="icons.js"></script>
+<script>
+  const D = window.DUETTINO;
+
+  // icon (a)'s strands, stretched to the card's width: apart on the left, a two-tone ribbon on the right.
+  function strand(sign) {
+    const sm = (t) => { const c = Math.min(1, Math.max(0, t)); return c * c * (3 - 2 * c); };
+    const pts = [];
+    for (let x = -20; x <= 1300; x += 4) {
+      const sep = 13 + 58 * (1 - sm((x - 60) / 640));
+      const wig = 20 * Math.sin((2 * Math.PI * (x + 40)) / 330);
+      pts.push(`${x},${(552 + sign * sep + wig).toFixed(1)}`);
+    }
+    return "M" + pts.join(" L");
+  }
+  const STRANDS = `<svg class="strands" width="1280" height="640" viewBox="0 0 1280 640" aria-hidden="true">
+    <path d="${strand(1)}" fill="none" stroke="var(--c2)" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="${strand(-1)}" fill="none" stroke="var(--c1)" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+
+  const card = (bg, below = false) => `
+    <div class="card ${bg}${below ? " below" : ""}" role="img" aria-label="Duettino: records what you say and what you hear">
+      <div class="brand">${D.svg("a", 112, { forceFull: true, label: false })}<span>Duettino</span></div>
+      <p class="line">Records <span class="say">what you say</span><br>and <span class="hear">what you hear</span>.</p>
+      <div class="url">Free and open source · Windows 10/11 · duettino.fabiolazzaroni.dev</div>
+      ${STRANDS}
+    </div>`;
+
+  const params = new URLSearchParams(location.search);
+  const exp = params.get("export");
+  if (exp) {
+    document.body.classList.add("export");
+    document.body.insertAdjacentHTML("beforeend", card(exp === "light" ? "light" : "dark", params.get("below") === "1"));
+    D.applyPalette(document.querySelector(".card"), params.get("palette") ?? "carrot");
+  } else {
+    document.querySelectorAll(".frame").forEach((f) => {
+      f.innerHTML = card(f.dataset.bg, f.dataset.below === "1");
+      D.applyPalette(f.firstElementChild, f.dataset.pal ?? "carrot");
+    });
+    const fit = () => document.querySelectorAll(".frame").forEach((f) => {
+      f.firstElementChild.style.transform = `scale(${f.clientWidth / 1280})`;
+    });
+    new ResizeObserver(fit).observe(document.body);
+    fit();
+  }
+</script>
+</body>
+</html>
