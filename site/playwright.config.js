@@ -17,6 +17,6 @@ export default defineConfig({
     command: "node scripts/serve-dist.mjs",
     env: {PORT},
     url: `http://localhost:${PORT}`,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
   },
 });

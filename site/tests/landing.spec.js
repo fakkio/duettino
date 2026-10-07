@@ -16,6 +16,10 @@ for (const theme of THEMES) {
     for (const target of PAGES) {
       test(`${target.name} has no accessibility violations`, async ({page}) => {
         await gotoWithTheme(page, target.path, theme);
+        // Open every FAQ answer too: axe skips collapsed content.
+        await page.evaluate(() =>
+          document.querySelectorAll("details").forEach((d) => (d.open = true)),
+        );
         const results = await new AxeBuilder({page})
           .withTags(WCAG_TAGS)
           .analyze();
@@ -66,11 +70,11 @@ for (const theme of THEMES) {
   });
 }
 
-test("the theme follows the system on the first visit", async ({browser}) => {
+test("the theme follows the system on the first visit", async ({browser, baseURL}) => {
   for (const scheme of THEMES) {
-    const context = await browser.newContext({colorScheme: scheme});
+    const context = await browser.newContext({colorScheme: scheme, baseURL});
     const page = await context.newPage();
-    await page.goto("http://localhost:" + (process.env.LOCAL_PORT ?? "4321"));
+    await page.goto("/");
     await expect(page.locator("html")).toHaveAttribute("data-theme", scheme);
     await context.close();
   }
@@ -93,7 +97,7 @@ test("the Download note renders as a note, with no literal marker", async ({
 }) => {
   await page.goto("/");
   const note = page.getByRole("note");
-  await expect(note).toContainText("Note");
+  await expect(note.locator(".note-label")).toHaveText("Note");
   await expect(note).toContainText("Windows protected your PC");
   expect(await page.locator("body").innerText()).not.toContain("[!NOTE]");
 });
@@ -173,6 +177,13 @@ test("the README's repo-relative links point at the repository", async ({
   );
   // Inside a closed FAQ answer, so not "visible": look it up by its target.
   await expect(page.locator('a[href="/privacy"]', {hasText: "privacy page"})).toHaveCount(1);
+});
+
+test("the footer links to fabiolazzaroni.dev", async ({page}) => {
+  await page.goto("/");
+  await expect(
+    page.locator("footer a[href='https://fabiolazzaroni.dev']"),
+  ).toBeVisible();
 });
 
 test("a phone-width page doesn't scroll horizontally", async ({page}) => {

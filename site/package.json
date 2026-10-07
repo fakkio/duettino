@@ -11,7 +11,7 @@
     "dev": "npm run sync-assets && astro dev",
     "build": "npm run sync-assets && astro build",
     "preview": "astro preview",
-    "test": "node scripts/test-ci.mjs",
+    "test": "npm run build && playwright test",
     "test:browser": "playwright test"
   },
   "dependencies": {

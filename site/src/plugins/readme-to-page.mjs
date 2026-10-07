@@ -10,7 +10,7 @@ const isRelative = (url) =>
 
 // Repo-relative paths: assets/web/* are served by the site (see
 // scripts/sync-assets.mjs), anything else (docs/adr, LICENSE) lives on GitHub.
-export const rewriteUrl = (url) => {
+const rewriteUrl = (url) => {
   if (url.startsWith(SITE)) return url.slice(SITE.length) || "/";
   if (!isRelative(url)) return url;
   if (url.startsWith("assets/web/")) return `/${url}`;
