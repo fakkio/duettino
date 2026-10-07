@@ -1,0 +1,147 @@
+/* Duettino's own pieces, on top of the fabiolazzaroni.dev skeleton.
+   --c1 is what you say, --c2 what you hear; one pair per theme so each keeps
+   3:1 against its ground. */
+
+:root {
+  --c1: #d35400;
+  --c2: #138d75;
+  --color-subtle: #5b6770;
+  --mono: "Cascadia Mono", Consolas, ui-monospace, monospace;
+}
+
+[data-theme="dark"] {
+  --c1: #e67e22;
+  --c2: #1abc9c;
+  --color-subtle: #b3c0c9;
+  --color-bgTranslucent: #1f2d3b;
+  color-scheme: dark;
+}
+
+.theme-dark {
+  display: none;
+}
+[data-theme="dark"] .theme-light {
+  display: none;
+}
+[data-theme="dark"] .theme-dark {
+  display: block;
+}
+
+main h2 {
+  margin-top: 2.75rem;
+}
+
+main section,
+main h2 {
+  scroll-margin-top: 1rem;
+}
+
+main img {
+  height: auto;
+}
+
+main ul,
+main ol {
+  padding-left: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+main li + li {
+  margin-top: 0.35rem;
+}
+
+main ul li::marker {
+  color: var(--c1);
+}
+main ol li::marker {
+  color: var(--c2);
+  font-weight: 700;
+}
+
+code {
+  font-family: var(--mono);
+  font-size: 0.9em;
+  background: var(--color-bgTranslucent);
+  padding: 0.05em 0.3em;
+  border-radius: 3px;
+  overflow-wrap: anywhere;
+}
+
+pre {
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  background: var(--color-bgTranslucent);
+  padding: 0.9rem 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+pre code {
+  background: none;
+  padding: 0;
+}
+
+/* The README's FAQ: questions collapsed, answers on demand. */
+details {
+  border-top: 1px solid var(--color-muted);
+  padding: 0.6rem 0;
+}
+details:last-of-type {
+  border-bottom: 1px solid var(--color-muted);
+}
+summary {
+  cursor: pointer;
+  font-weight: 600;
+  list-style: none;
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+}
+summary::-webkit-details-marker {
+  display: none;
+}
+summary::before {
+  content: "+";
+  font-family: var(--mono);
+  color: var(--c2);
+  font-weight: 700;
+  width: 1ch;
+  flex: none;
+}
+details[open] summary::before {
+  content: "−";
+  color: var(--c1);
+}
+summary:focus-visible {
+  outline: 2px solid var(--c2);
+  outline-offset: 3px;
+}
+details > :not(summary) {
+  margin-left: 1.6rem;
+}
+details > ul,
+details > ol {
+  margin-left: 2.85rem;
+}
+
+/* GitHub's [!NOTE] alert. The label carries the meaning in text, so the
+   border is decoration on top of it. */
+.note {
+  border-left: 4px solid var(--c2);
+  background: var(--color-bgTranslucent);
+  padding: 0.6rem 1rem;
+  margin-bottom: 1rem;
+  border-radius: 0 6px 6px 0;
+}
+.note > p:last-child {
+  margin-bottom: 0;
+}
+.note-label {
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.header .lang {
+  margin-right: auto;
+}

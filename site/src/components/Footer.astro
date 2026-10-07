@@ -1,0 +1,38 @@
+<footer class="footer">
+  <div class="inner container">
+    <span>
+      Made by <a href="https://fabiolazzaroni.dev">Fabio Lazzaroni</a>
+    </span>
+    <span>
+      <a href="/privacy">Privacy</a> -{" "}
+      <a href="https://github.com/fakkio/duettino">Source code</a>
+    </span>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    background-color: var(--color-invertedBackground);
+    color: var(--color-invertedText);
+    flex: 0 0 auto;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    margin-top: 3rem;
+    transition:
+      color var(--theme-transition-duration),
+      background-color var(--theme-transition-duration);
+  }
+
+  /* The footer is the inverted theme: its links need their own token. */
+  .footer a,
+  .footer a:hover {
+    color: var(--color-invertedLink);
+  }
+
+  .inner {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.25rem 1rem;
+  }
+</style>
