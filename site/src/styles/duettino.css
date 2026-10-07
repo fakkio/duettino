@@ -193,7 +193,7 @@ details > ol {
 .btn {
   position: relative;
   display: inline-block;
-  margin-bottom: 0.5rem;
+  margin: 1rem 0 0.5rem;
   font-size: 1.15rem;
   font-weight: 600;
   text-decoration: none;
