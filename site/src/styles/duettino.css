@@ -266,6 +266,10 @@ details > ol {
   }
 }
 
+strong:has(> .btn) + a {
+  margin-left: 1rem;
+}
+
 /* The README's steps, numbered in circles. */
 main > ol {
   list-style: none;

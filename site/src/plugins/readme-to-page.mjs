@@ -127,6 +127,11 @@ export const readmeToPage = {
     if (node.depth !== 1) return;
     ctx.replaceNode(node, [node, {type: "html", value: "</div>"}]);
   },
+  // The README separates the Download link from "All releases" with a dot;
+  // next to the button, spacing does that job.
+  text(node, ctx) {
+    if (node.value === " · ") ctx.setProperty(node, "value", " ");
+  },
   html(node, ctx) {
     const html = rewriteHtml(node.value);
     ctx.replaceNode(node, {

@@ -354,3 +354,10 @@ test("the Download button has no link underline", async ({page}) => {
   expect(after).toBe("none");
   await expect(page.locator("main a.btn .front")).toHaveText("Download Duettino.exe");
 });
+
+test("no dot separates the Download button from All releases", async ({page}) => {
+  await page.goto("/");
+  const row = page.locator("main p", {has: page.locator("a.btn")});
+  await expect(row.getByRole("link", {name: "All releases"})).toBeVisible();
+  expect(await row.innerText()).not.toContain("·");
+});
