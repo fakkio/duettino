@@ -48,6 +48,10 @@ _Avoid_: auto-switch, failover
 The Output coming back into the Input (through the air or the hardware), so the same sound appears twice in the Mix.
 _Avoid_: feedback, bleed
 
+**Background noise**:
+The steady sound a Source carries while nothing happens on it (a microphone's hiss, fans, the room). Unlike a Gap, it is audio, just not wanted.
+_Avoid_: hiss, room noise, noise floor
+
 ### Files and Finalization
 
 **Working file**:
@@ -67,7 +71,7 @@ Turning a Working file into a Recording file: Leveling, Mix, encoding, then remo
 _Avoid_: export, conversion, save
 
 **Leveling**:
-Bringing each Source to a comparable loudness before the Mix, so neither side drowns the other.
+Bringing each Source to a comparable loudness before the Mix, so neither side drowns the other. Stretches holding only Background noise are left as captured.
 _Avoid_: normalization, gain, volume
 
 **Mix**:

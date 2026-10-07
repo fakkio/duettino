@@ -14,6 +14,8 @@ Features deliberately left out of v1, kept here so they aren't lost. Not commitm
 - **Turning Leveling off**, keeping the Sources as captured.
 - **Manual balance**: two sliders to correct the Leveling after the fact.
 - **Offline echo cancellation** at Finalization, using the Output as the reference signal, for Recordings made with speakers (ADR-0004 makes it possible). Measure how bad the echo is with the `/prototype` spike first.
+- **Spectral noise reduction on the Input** (spectral subtraction / Wiener filter, managed code): removes Background noise under the voice too, which the planned expander leaves in. Needs careful tuning, or it adds "musical noise" artifacts. Worth it only if the noise under the voice still bothers after the expander.
+- **Neural noise reduction on the Input** (RNNoise or similar): the best results on speech, but a native dependency, and made for speech only, so music or a line-in on the Input would suffer.
 - **Windows system echo cancellation** (`IAcousticEchoCancellationControl`, Windows 11 22H2+, driver-dependent, exposed by NAudio 3). Needs communications mode, which also turns on AGC and noise suppression and may duck other sounds.
 
 ## Window
