@@ -289,3 +289,13 @@ for (const theme of THEMES) {
     }
   });
 }
+
+test("each step is one block beside its number", async ({page}) => {
+  await page.goto("/");
+  const steps = page.locator("main > ol > li");
+  expect(await steps.count()).toBeGreaterThan(0);
+  for (const step of await steps.all()) {
+    await expect(step.locator("> *")).toHaveCount(1);
+    await expect(step.locator("> .step")).toHaveCount(1);
+  }
+});

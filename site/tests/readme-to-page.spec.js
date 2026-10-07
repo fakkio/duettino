@@ -75,3 +75,10 @@ test("the diagram's picture becomes the HTML diagram, keeping its description", 
   expect(html).toContain("in Documents\\Duettino");
   expect(html).not.toContain("how-it-works");
 });
+
+test("an ordered item's content is wrapped in one step block", () => {
+  const html = render("1. **Press Stop.** Then `a` and `b`.\n\n- plain\n");
+
+  expect(html).toMatch(/<li>\s*<div class="step">\s*<strong>Press Stop\.<\/strong> Then <code>a<\/code> and <code>b<\/code>\.\s*<\/div>\s*<\/li>/);
+  expect(html).toContain("<li>plain</li>");
+});

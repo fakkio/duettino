@@ -230,7 +230,6 @@ main > ol > li {
 }
 main > ol > li::before {
   content: counter(step);
-  grid-row: span 2;
   width: 1.75rem;
   height: 1.75rem;
   border-radius: 50%;

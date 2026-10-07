@@ -108,6 +108,18 @@ export const readmeToPage = {
     );
     ctx.replaceNode(node, {type: "html", value: `<p class="bigline">${wrapped}</p>`});
   },
+  // A step's text, with its inline code and bold, is one grid cell next to the
+  // number: wrapped, so each child doesn't take a cell of its own.
+  list(node, ctx) {
+    if (!node.ordered) return;
+    for (const item of node.children) {
+      ctx.setProperty(item, "children", [
+        {type: "html", value: '<div class="step">'},
+        ...item.children,
+        {type: "html", value: "</div>"},
+      ]);
+    }
+  },
   html(node, ctx) {
     ctx.replaceNode(node, {type: "html", value: rewriteHtml(node.value)});
   },
