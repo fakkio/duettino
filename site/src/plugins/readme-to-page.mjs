@@ -72,6 +72,7 @@ const rewriteHtml = (html) =>
     .replace(/\b(src|srcset)=["']([^"']*)["']/g, (_, attr, url) => `${attr}="${rewriteUrl(url)}"`)
     .replace(/\bhref=["']([^"']*)["']/g, (_, url) => `href="${rewriteUrl(url)}"`);
 
+const ICON_PICTURE = /<picture>[\s\S]*icon-(light|dark)\.svg/;
 const DOWNLOAD_URL = `${REPO}/releases/latest/download/Duettino.exe`;
 const HEADLINE = /what you say.*what you hear/;
 
@@ -120,8 +121,18 @@ export const readmeToPage = {
       ]);
     }
   },
+  // The README's icon (a <picture>) and its "# Duettino" title sit on one row:
+  // the icon opens the row, the title closes it.
+  heading(node, ctx) {
+    if (node.depth !== 1) return;
+    ctx.replaceNode(node, [node, {type: "html", value: "</div>"}]);
+  },
   html(node, ctx) {
-    ctx.replaceNode(node, {type: "html", value: rewriteHtml(node.value)});
+    const html = rewriteHtml(node.value);
+    ctx.replaceNode(node, {
+      type: "html",
+      value: ICON_PICTURE.test(node.value) ? `<div class="brand">${html}` : html,
+    });
   },
   // GitHub's "> [!NOTE]" alert: plain Markdown would print the marker.
   blockquote(node, ctx) {

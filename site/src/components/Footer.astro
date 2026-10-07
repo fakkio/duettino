@@ -1,11 +1,22 @@
+---
+import GitHubLogo from "./GitHubLogo.astro";
+
+const year = new Date().getFullYear();
+---
+
 <footer class="footer">
   <div class="inner container">
-    <span>
-      Made by <a href="https://fabiolazzaroni.dev">Fabio Lazzaroni</a>
+    <span lang="en">
+      2026{year > 2026 ? ` - ${year}` : ""} | Made by{" "}
+      <a href="https://fabiolazzaroni.dev">Fabio Lazzaroni</a> with{" "}
+      <span role="img" aria-label="Passion" class="beat">❤</span>, and{" "}
+      <span role="img" aria-label="Coffee">☕</span>
     </span>
     <span>
       <a href="/privacy">Privacy</a> -{" "}
-      <a href="https://github.com/fakkio/duettino">Source code</a>
+      <a href="https://github.com/fakkio/duettino" class="onlyIcon">
+        <GitHubLogo inverted aria-label="Duettino's source code on GitHub" />
+      </a>
     </span>
   </div>
 </footer>
@@ -34,5 +45,39 @@
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 0.25rem 1rem;
+  }
+
+  .beat {
+    display: inline-block;
+    animation: beat 10s infinite;
+    animation-delay: 7.5s;
+    will-change: transform;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .beat {
+      animation: none;
+    }
+  }
+
+  @keyframes beat {
+    0% {
+      transform: scale(1);
+    }
+    2% {
+      transform: scale(1.25);
+    }
+    4% {
+      transform: scale(1);
+    }
+    6% {
+      transform: scale(1.2);
+    }
+    8% {
+      transform: scale(1);
+    }
+    100% {
+      transform: scale(1);
+    }
   }
 </style>

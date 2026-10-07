@@ -82,3 +82,16 @@ test("an ordered item's content is wrapped in one step block", () => {
   expect(html).toMatch(/<li>\s*<div class="step">\s*<strong>Press Stop\.<\/strong> Then <code>a<\/code> and <code>b<\/code>\.\s*<\/div>\s*<\/li>/);
   expect(html).toContain("<li>plain</li>");
 });
+
+test("the icon and the title are one row", () => {
+  const html = render(`<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/web/icon-dark.svg">
+  <img src="assets/web/icon-light.svg" alt="">
+</picture>
+
+# Duettino
+
+## Download`);
+
+  expect(html).toMatch(/<div class="brand">[\s\S]*<h1>Duettino<\/h1>\s*<\/div>\s*<h2>/);
+});

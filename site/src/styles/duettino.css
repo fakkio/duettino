@@ -53,6 +53,9 @@ main li + li {
 main ul li::marker {
   color: var(--c1);
 }
+main ul li:nth-child(even)::marker {
+  color: var(--c2);
+}
 
 code {
   font-family: var(--mono);
@@ -228,6 +231,9 @@ main > ol > li {
   grid-template-columns: 2rem 1fr;
   gap: 0 0.75rem;
 }
+main > ol > li + li {
+  margin-top: 1rem;
+}
 main > ol > li::before {
   content: counter(step);
   width: 1.75rem;
@@ -309,4 +315,19 @@ main > ol > li:nth-child(3)::before {
   .flow svg {
     padding: 0 0.3rem;
   }
+}
+
+/* The icon and the title share a row. */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1.5rem 0 0.5rem;
+}
+.brand h1 {
+  margin: 0;
+}
+.brand img {
+  width: 56px;
+  height: 56px;
 }

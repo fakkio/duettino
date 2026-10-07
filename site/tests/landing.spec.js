@@ -299,3 +299,49 @@ test("each step is one block beside its number", async ({page}) => {
     await expect(step.locator("> .step")).toHaveCount(1);
   }
 });
+
+test("the icon and the title share a row", async ({page}) => {
+  await page.goto("/");
+  const title = page.getByRole("heading", {level: 1, name: "Duettino"});
+  const icon = page.locator(".brand img:visible");
+  const [t, i] = [await title.boundingBox(), await icon.boundingBox()];
+  expect(Math.abs(t.y + t.height / 2 - (i.y + i.height / 2))).toBeLessThan(i.height / 2);
+  expect(i.x + i.width).toBeLessThanOrEqual(t.x + 1);
+});
+
+test("the bullets alternate pumpkin and green sea", async ({page}) => {
+  await page.goto("/");
+  const colors = await page
+    .locator("main > ul")
+    .first()
+    .locator("> li")
+    .evaluateAll((lis) => lis.map((li) => getComputedStyle(li, "::marker").color));
+  expect(colors.length).toBeGreaterThan(2);
+  expect(colors[0]).toBe(colors[2]);
+  expect(colors[0]).not.toBe(colors[1]);
+});
+
+test("the footer carries the copyright, the credit and the GitHub icon", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const footer = page.locator("footer");
+  await expect(footer).toContainText(`${new Date().getFullYear() > 2026 ? "2026 - " : "2026"}`);
+  await expect(footer).toContainText("Made by Fabio Lazzaroni with ❤, and ☕");
+  const github = footer.getByRole("link", {name: /source code on GitHub/});
+  await expect(github).toHaveAttribute("href", "https://github.com/fakkio/duettino");
+  await expect(footer.getByText("Source code")).toHaveCount(0);
+});
+
+test("the GitHub icon stays visible on the footer in both themes", async ({
+  page,
+}) => {
+  for (const theme of THEMES) {
+    await gotoWithTheme(page, "/", theme);
+    const [fill, ground] = await page.evaluate(() => [
+      getComputedStyle(document.querySelector("footer svg path")).fill,
+      getComputedStyle(document.querySelector("footer")).backgroundColor,
+    ]);
+    expect(fill, theme).not.toBe(ground);
+  }
+});
