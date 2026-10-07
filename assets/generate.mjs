@@ -1,4 +1,5 @@
-// Turns the icon's SVG source (duettino.svg) into every derived image. How to run it: README.md.
+// Turns the icon's SVG source (duettino.svg) into every derived image, and draws the README's diagram in its strands
+// and colors. How to run it: README.md.
 // The generated files are committed: neither the build nor the deploy runs this script.
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -40,6 +41,16 @@ writeFileSync(
   here("web/social-light.png"),
   // clouds ground, midnight letters, asbestos facts line
   socialImage(icon, { ground: "#ECF0F1", letters: "#2C3E50", facts: "#7F8C8D", colors: CARROT }),
+);
+writeFileSync(
+  here("web/how-it-works-light.svg"),
+  // the landing's light text and subtle text (--color-text, --color-subtle), for GitHub's light theme
+  diagram({ text: "#212529", subtle: "#5B6770", colors: PUMPKIN }),
+);
+writeFileSync(
+  here("web/how-it-works-dark.svg"),
+  // the landing's dark text (clouds) and subtle text, for GitHub's dark theme
+  diagram({ text: "#ECF0F1", subtle: "#B3C0C9", colors: CARROT }),
 );
 
 /** The SVG drawn at `size` × `size` pixels. */
@@ -114,9 +125,7 @@ function socialImage(icon, { ground, letters, facts, colors }) {
     // Large text over a colored band needs 3:1 (WCAG 1.4.3); axe can't see it, so it's checked here.
     if (ratio < 3) throw new Error(`The headline's letters over ${color} measure ${ratio.toFixed(2)}:1, below 3:1.`);
   }
-  const strand = (sign, color) =>
-    `<path d="${socialStrand(sign)}" fill="none" stroke="${color}" stroke-width="26" stroke-linecap="round"` +
-    ` stroke-linejoin="round"/>`;
+  const strand = (sign, color) => strandPath(socialStrand(sign), color, 26);
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640">
   <rect width="1280" height="640" fill="${ground}"/>
   <svg x="80" y="72" width="112" height="112" viewBox="0 0 256 256">${recolor(paths(icon), colors)}</svg>
@@ -163,10 +172,6 @@ function socialImage(icon, { ground, letters, facts, colors }) {
 
 /** One of the icon's strands stretched along the social image's bottom: apart on the left, a ribbon on the right. */
 function socialStrand(sign) {
-  const smooth = (t) => {
-    const c = Math.min(1, Math.max(0, t));
-    return c * c * (3 - 2 * c);
-  };
   const points = [];
   for (let x = -20; x <= 1300; x += 4) {
     const separation = 13 + 58 * (1 - smooth((x - 60) / 640));
@@ -174,6 +179,59 @@ function socialStrand(sign) {
     points.push(`${x},${(552 + sign * separation + wiggle).toFixed(1)}`);
   }
   return "M" + points.join(" L");
+}
+
+/**
+ * The README's "How it works" diagram, drawn like the icon: "what you say" and "what you hear" as two strands, apart
+ * on the left, joining into a two-tone ribbon that ends in the MP3. A transparent ground, so GitHub's own shows
+ * through; the README picks the light or the dark one by GitHub's theme, and the landing swaps it for an HTML diagram.
+ * The text is left to the browser's fonts, as an image on GitHub shows it.
+ */
+function diagram({ text, subtle, colors }) {
+  const font = 'font-family="Segoe UI, system-ui, -apple-system, Helvetica, Arial, sans-serif"';
+  const lane = (title, detail, baseline, color) =>
+    `<text x="0" y="${baseline}" ${font} font-size="20" font-weight="700" fill="${color}">${title}</text>
+  <text x="0" y="${baseline + 24}" ${font} font-size="15" fill="${subtle}">${detail}</text>`;
+  const strand = (sign, color) => strandPath(diagramStrand(sign), color, 8);
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="780" height="140" viewBox="0 30 780 140" role="img">
+  <title>What you say (the Input: your microphone) and what you hear (the Output: your headphones) join into one MP3 in Documents\\Duettino.</title>
+  ${lane("What you say", "Input: your microphone", 62, colors.say)}
+  ${lane("What you hear", "Output: your headphones", 134, colors.hear)}
+  ${strand(1, colors.hear)}
+  ${strand(-1, colors.say)}
+  <rect x="580" y="58" width="196" height="84" rx="8" fill="none" stroke="${text}" stroke-width="2.5"/>
+  <text x="598" y="94" ${font} font-size="24" font-weight="700" fill="${text}">One MP3</text>
+  <text x="598" y="122" ${font} font-size="15" fill="${subtle}">in Documents\\Duettino</text>
+</svg>
+`;
+}
+
+/**
+ * One of the diagram's strands, from beside its lane to the MP3: 34 px from the middle on the left, a wave that calms
+ * down as the two meet, and touching the other strand (half the 8 px stroke) on the right.
+ */
+function diagramStrand(sign) {
+  const points = [];
+  for (let t = 0; t <= 200; t += 2) {
+    const separation = 4 + 30 * (1 - smooth((t - 8) / 120));
+    const wiggle = 7 * Math.sin((2 * Math.PI * t) / 70) * (1 - smooth((t - 150) / 45));
+    points.push(`${(216 + 1.72 * t).toFixed(1)},${(100 + sign * separation + wiggle).toFixed(2)}`);
+  }
+  return "M" + points.join(" L");
+}
+
+/** A strand drawn along the path `d`, `width` px thick with round ends, like the icon's. */
+function strandPath(d, color, width) {
+  return (
+    `<path d="${d}" fill="none" stroke="${color}" stroke-width="${width}" stroke-linecap="round"` +
+    ` stroke-linejoin="round"/>`
+  );
+}
+
+/** 0 up to `t` = 0, 1 from `t` = 1, an S-curve between: how the strands ease apart and together. */
+function smooth(t) {
+  const c = Math.min(1, Math.max(0, t));
+  return c * c * (3 - 2 * c);
 }
 
 /** The WCAG contrast ratio between two `#RRGGBB` colors. */
