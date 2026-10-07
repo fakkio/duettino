@@ -1,7 +1,5 @@
 export const COLOR_MODE_KEY = "color-mode";
 
-export const SITE = "https://duettino.fabiolazzaroni.dev";
-
 export const SITE_METADATA = {
   title: "Duettino: records what you say and what you hear",
   description:

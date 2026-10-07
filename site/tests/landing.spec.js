@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import {expect, test} from "@playwright/test";
+import {SITE} from "../src/utils/site.mjs";
 import {gotoWithTheme} from "./color-mode.js";
 
 const PAGES = [
@@ -92,6 +93,15 @@ test("the home page shows the README's content", async ({page}) => {
   await expect(page.getByText("Why not just use Stereo Mix?")).toBeVisible();
 });
 
+test("no <picture> is left: the page's theme toggle picks the image", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.locator("picture, source")).toHaveCount(0);
+  await expect(page.locator("img.theme-light")).not.toHaveCount(0);
+  await expect(page.locator("img.theme-dark")).not.toHaveCount(0);
+});
+
 test("the Download note renders as a note, with no literal marker", async ({
   page,
 }) => {
@@ -110,9 +120,7 @@ test("the metadata points to the dark social image and the favicon set", async (
   const ogImage = await page
     .locator('meta[property="og:image"]')
     .getAttribute("content");
-  expect(ogImage).toBe(
-    "https://duettino.fabiolazzaroni.dev/assets/web/social-dark.png",
-  );
+  expect(ogImage).toBe(`${SITE}/assets/web/social-dark.png`);
   expect((await request.get(new URL(ogImage).pathname)).ok()).toBe(true);
   await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute(
     "content",
