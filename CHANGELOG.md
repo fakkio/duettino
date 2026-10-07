@@ -28,5 +28,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Give Duettino its own icon, two strands joining into one ribbon, on the executable in Explorer and on the window's title bar, taskbar button and Alt+Tab, sharp at any display scaling.
 - Explain Duettino in a README: what it records and how, who it's for, what it takes care of, a FAQ (Stereo Mix, Bluetooth headphones, speakers, privacy, SmartScreen, Windows N, the law, other tools), a one-click download and how to build it.
 - Publish the README as an English landing page, with the light or dark theme following the system and a toggle, and a short privacy page (not live until the first release).
+- Give the landing page its own look: a big headline with colored bands behind "what you say" and "what you hear", a diagram of both joining into one MP3, and a Download button.
 
 [Unreleased]: https://github.com/fakkio/duettino/commits/develop

@@ -44,3 +44,34 @@ test("a blockquote that doesn't start with [!NOTE] stays a blockquote", () => {
   expect(html).toContain("<blockquote>");
   expect(html).not.toContain('role="note"');
 });
+
+test("the headline's two phrases are wrapped, only in the bold line", () => {
+  const html = render("**Records what you say and what you hear.**\n\nWhat you say & what you hear, plain.");
+
+  expect(html).toContain(
+    '<p class="bigline">Records <span class="say">what you say</span> and <span class="hear">what you hear</span>.</p>',
+  );
+  expect(html).not.toContain('class="say">What');
+});
+
+test("only the latest-executable link becomes the button", () => {
+  const html = render(
+    "**[Download Duettino.exe](https://github.com/fakkio/duettino/releases/latest/download/Duettino.exe)** · [All releases](https://github.com/fakkio/duettino/releases)",
+  );
+
+  expect(html).toContain(
+    '<a class="btn" href="https://github.com/fakkio/duettino/releases/latest/download/Duettino.exe">Download Duettino.exe</a>',
+  );
+  expect(html).toContain('<a href="https://github.com/fakkio/duettino/releases">All releases</a>');
+});
+
+test("the diagram's picture becomes the HTML diagram, keeping its description", () => {
+  const html = render(`<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/web/how-it-works-dark.svg">
+  <img src="assets/web/how-it-works-light.svg" alt="Two join into one.">
+</picture>`);
+
+  expect(html).toContain('<figure class="flow" role="img" aria-label="Two join into one.">');
+  expect(html).toContain("in Documents\\Duettino");
+  expect(html).not.toContain("how-it-works");
+});

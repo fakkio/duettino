@@ -206,3 +206,86 @@ test("a phone-width page doesn't scroll horizontally", async ({page}) => {
     expect(overflow, path).toBeLessThanOrEqual(0);
   }
 });
+
+test("the headline's two phrases are wrapped for the bands", async ({page}) => {
+  await page.goto("/");
+  const headline = page.locator("p.bigline");
+  await expect(headline).toHaveText("Records what you say and what you hear.");
+  await expect(headline.locator(".say")).toHaveText("what you say");
+  await expect(headline.locator(".hear")).toHaveText("what you hear");
+});
+
+test("the Download button links to the latest executable", async ({page}) => {
+  await page.goto("/");
+  const button = page.locator("main a.btn");
+  await expect(button).toHaveCount(1);
+  await expect(button).toHaveText("Download Duettino.exe");
+  await expect(button).toHaveAttribute(
+    "href",
+    "https://github.com/fakkio/duettino/releases/latest/download/Duettino.exe",
+  );
+});
+
+test("How it works opens with the HTML diagram, not the image", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const section = page.locator("h2", {hasText: "How to record"});
+  const diagram = page.locator("figure.flow");
+  await expect(diagram).toHaveCount(1);
+  await expect(diagram).toHaveAttribute("role", "img");
+  await expect(diagram).toHaveAttribute("aria-label", /join into one MP3/);
+  await expect(page.locator('img[src*="how-it-works"]')).toHaveCount(0);
+  // It follows the section's heading directly.
+  expect(
+    await section.evaluate((h) => h.nextElementSibling?.matches("figure.flow")),
+  ).toBe(true);
+});
+
+test("on a phone the diagram's box reads One MP3", async ({page}) => {
+  await page.setViewportSize({width: 360, height: 800});
+  await page.goto("/");
+  const box = page.locator(".flow-result");
+  await expect(box).toHaveText("One MP3", {useInnerText: true});
+  expect(
+    await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth -
+        document.documentElement.clientWidth,
+    ),
+  ).toBeLessThanOrEqual(0);
+
+  await page.setViewportSize({width: 1000, height: 800});
+  await expect(box).toContainText("in Documents\\Duettino");
+});
+
+for (const theme of THEMES) {
+  test(`the headline's letters measure 3:1 over each band, ${theme}`, async ({
+    page,
+  }) => {
+    await gotoWithTheme(page, "/", theme);
+    const colors = await page.locator("p.bigline").evaluate((p) => {
+      const rgb = (css) => css.match(/rgba?\([^)]*\)/)[0].match(/[\d.]+/g).slice(0, 3).map(Number);
+      const read = (el) => ({
+        text: rgb(getComputedStyle(el).color),
+        band: rgb(getComputedStyle(el).backgroundImage),
+      });
+      return {say: read(p.querySelector(".say")), hear: read(p.querySelector(".hear"))};
+    });
+    const luminance = (c) => {
+      const [r, g, b] = c.map((v) => {
+        const s = v / 255;
+        return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+      });
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    const contrast = (a, b) => {
+      const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+      return (hi + 0.05) / (lo + 0.05);
+    };
+    for (const phrase of ["say", "hear"]) {
+      const {text, band} = colors[phrase];
+      expect(contrast(text, band), phrase).toBeGreaterThanOrEqual(3);
+    }
+  });
+}

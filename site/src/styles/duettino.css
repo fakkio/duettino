@@ -53,10 +53,6 @@ main li + li {
 main ul li::marker {
   color: var(--c1);
 }
-main ol li::marker {
-  color: var(--c2);
-  font-weight: 700;
-}
 
 code {
   font-family: var(--mono);
@@ -140,4 +136,178 @@ details > ol {
 .note-label {
   font-weight: 700;
   margin-bottom: 0.25rem;
+}
+
+/* Layout D. --c1 is what you say, --c2 what you hear. The bands run behind the
+   bottom of the headline's letters, so they take the pair opposite to the
+   theme's accents: bright under dark text, dark under light text. The step
+   numbers sit on the bright pair in both themes, with dark numbers. */
+:root {
+  --band1: #e67e22;
+  --band2: #1abc9c;
+  --fill1: #e67e22;
+  --fill2: #1abc9c;
+  --on-fill: #14202b;
+  --btn-bg: #0e6655;
+  --btn-fg: #ffffff;
+  --say-ink: #8e3a00;
+  --hear-ink: #0d6a58;
+}
+
+[data-theme="dark"] {
+  --band1: #d35400;
+  --band2: #138d75;
+  --btn-bg: var(--c2);
+  --btn-fg: #10202a;
+  --say-ink: #f0a45f;
+  --hear-ink: #5fd6bd;
+}
+
+.bigline {
+  font-size: clamp(2rem, 1.2rem + 3.6vw, 3.1rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.08;
+  margin: 1rem 0;
+  text-wrap: balance;
+}
+.bigline .say,
+.bigline .hear {
+  background-repeat: no-repeat;
+  background-size: 100% 0.28em;
+  background-position: 0 88%;
+  padding: 0 0.05em;
+}
+.bigline .say {
+  background-image: linear-gradient(var(--band1), var(--band1));
+}
+.bigline .hear {
+  background-image: linear-gradient(var(--band2), var(--band2));
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  padding: 0.7rem 1.2rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 1.1rem;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s,
+    background-color var(--theme-transition-duration);
+}
+.btn:hover,
+.btn:focus-visible {
+  color: var(--btn-fg);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px -6px var(--btn-bg);
+}
+.btn:focus-visible {
+  outline: 3px solid var(--c1);
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn:hover,
+  .btn:focus-visible {
+    transform: none;
+  }
+}
+
+/* The README's steps, numbered in circles. */
+main > ol {
+  list-style: none;
+  padding-left: 0;
+  counter-reset: step;
+}
+main > ol > li {
+  counter-increment: step;
+  display: grid;
+  grid-template-columns: 2rem 1fr;
+  gap: 0 0.75rem;
+}
+main > ol > li::before {
+  content: counter(step);
+  grid-row: span 2;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  background: var(--fill1);
+  color: var(--on-fill);
+}
+main > ol > li:nth-child(2)::before {
+  background: var(--fill2);
+}
+main > ol > li:nth-child(3)::before {
+  background: linear-gradient(90deg, var(--fill1) 50%, var(--fill2) 50%);
+}
+
+/* How it works' diagram: both Sources, then the ribbon, then the MP3. */
+.flow {
+  display: grid;
+  grid-template-columns: auto minmax(3.5rem, 1fr) auto;
+  align-items: center;
+  margin: 1.25rem 0 1.75rem;
+}
+.flow-lanes {
+  height: 7rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.flow .lane {
+  height: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  line-height: 1.2;
+}
+.flow .say b {
+  color: var(--say-ink);
+}
+.flow .hear b {
+  color: var(--hear-ink);
+}
+.flow .lane span,
+.flow-result span {
+  font-size: 0.85rem;
+  color: var(--color-subtle);
+}
+.flow svg {
+  width: 100%;
+  height: 7rem;
+  overflow: visible;
+  padding: 0 0.6rem;
+}
+.flow-result {
+  border: 2px solid var(--color-text);
+  border-radius: 6px;
+  padding: 0.5rem 0.8rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.flow-result span {
+  display: block;
+}
+
+@media (max-width: 30rem) {
+  .flow .lane span {
+    font-size: 0.75rem;
+  }
+  .flow-result {
+    white-space: nowrap;
+    padding: 0.4rem 0.55rem;
+  }
+  .flow-result span {
+    display: none;
+  }
+  .flow svg {
+    padding: 0 0.3rem;
+  }
 }
