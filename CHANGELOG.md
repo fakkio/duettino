@@ -31,6 +31,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Give the landing page its own look: a big headline with colored bands behind "what you say" and "what you hear", a diagram of both joining into one MP3, and a Download button.
 - Split the website's privacy page from the app's: the page now covers the website only (no cookies or analytics, and the visitor IP address GitHub Pages logs as host), while the app's privacy stays in the README's FAQ.
 - Add an Italian landing page at `/it/`, adapted rather than translated, and the website's privacy page in Italian, with an EN/IT link in the header and no automatic redirect by browser language (not live until the first release).
-- Give the landing page a 404 page in English and Italian, and a `humans.txt` naming its author (not live until the first release).
+- Give the landing page a 404 page, in English and in Italian for missing pages under `/it/`, and a `humans.txt` naming its author (not live until the first release).
 
 [Unreleased]: https://github.com/fakkio/duettino/commits/develop

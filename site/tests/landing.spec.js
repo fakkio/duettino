@@ -9,6 +9,7 @@ const PAGES = [
   {name: "it index", path: "/it/"},
   {name: "it privacy", path: "/it/privacy"},
   {name: "404", path: "/404.html"},
+  {name: "it 404", path: "/it/404.html"},
 ];
 const ALL_PATHS = PAGES.map((p) => p.path);
 const THEMES = /** @type {const} */ (["light", "dark"]);
@@ -523,17 +524,23 @@ test("the Italian privacy page speaks Italian and the toggle too", async ({page}
   await expect(page.locator("footer a[href='/it/privacy']")).toBeVisible();
 });
 
-test("a missing URL gets the 404 page, in both languages, out of search", async ({
-  page,
-}) => {
+test("a missing URL gets the English 404, out of search", async ({page}) => {
   const response = await page.goto("/no-such-page");
   expect(response.status()).toBe(404);
-  await expect(page.locator("main h1")).toContainText("Page not found");
-  await expect(page.locator("main h1")).toContainText("Pagina non trovata");
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await expect(page.locator("main h1")).toHaveText("404: Page not found");
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex");
   await expect(page.locator('link[rel="alternate"][hreflang]')).toHaveCount(0);
   await expect(page.locator("header a.lang-switch")).toHaveCount(0);
   await expect(page.getByRole("link", {name: "Back to the home page"})).toHaveAttribute("href", "/");
+});
+
+test("a missing URL under /it/ moves on to the Italian 404", async ({page}) => {
+  await page.goto("/it/no-such-page");
+  await expect(page).toHaveURL(/\/it\/404\.html$/);
+  await expect(page.locator("html")).toHaveAttribute("lang", "it");
+  await expect(page.locator("main h1")).toHaveText("404: Pagina non trovata");
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex");
   await expect(page.getByRole("link", {name: "Torna alla pagina principale"})).toHaveAttribute("href", "/it/");
 });
 
@@ -546,7 +553,7 @@ test("humans.txt names the author and is linked from every page", async ({
   expect(body).toContain("Name: Fabio Lazzaroni");
   expect(body).toContain("Released under the MIT License");
   expect(body).not.toContain("All rights reserved");
-  for (const path of ["/", "/it/", "/privacy", "/it/privacy", "/404.html"]) {
+  for (const path of ["/", "/it/", "/privacy", "/it/privacy", "/404.html", "/it/404.html"]) {
     await page.goto(path);
     await expect(page.locator('link[rel="author"]')).toHaveAttribute("href", "/humans.txt");
   }
