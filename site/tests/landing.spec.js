@@ -572,3 +572,17 @@ for (const path of ["/404.html", "/it/404.html"]) {
     expect(Math.abs(block.y + block.height / 2 - (main.y + main.height / 2))).toBeLessThan(2);
   });
 }
+
+for (const path of ["/", "/it/"]) {
+  test(`${path} shows the demo GIF at 60% of its size, with its description`, async ({page}) => {
+    await page.setViewportSize({width: 1000, height: 800});
+    await page.goto(path);
+    const gif = page.locator('main img[src="/assets/web/demo.gif"]');
+    await expect(gif).toHaveCount(1);
+    expect(await gif.getAttribute("alt")).toMatch(/\w{20}/);
+    const box = await gif.boundingBox();
+    expect(Math.round(box.width)).toBe(614);
+    expect(Math.round(box.height)).toBe(367);
+    expect((await page.request.get("/assets/web/demo.gif")).ok()).toBe(true);
+  });
+}
