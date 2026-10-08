@@ -183,8 +183,54 @@ test("the README's repo-relative links point at the repository", async ({
     "href",
     "https://github.com/fakkio/duettino/blob/main/LICENSE",
   );
-  // Inside a closed FAQ answer, so not "visible": look it up by its target.
-  await expect(page.locator('a[href="/privacy"]', {hasText: "privacy page"})).toHaveCount(1);
+});
+
+test("the FAQ answers the app's privacy itself", async ({page}) => {
+  await page.goto("/");
+  const answer = page
+    .locator("details", {hasText: "Does it upload anything?"})
+    .first();
+  // Closed answers aren't "visible", so read the text content.
+  const text = await answer.textContent();
+  expect(text).toContain("never connects to the network");
+  expect(text).toContain("%AppData%");
+  expect(text).not.toContain("privacy page");
+});
+
+test("the privacy page is about the website, not the app", async ({page}) => {
+  await page.goto("/privacy");
+  await expect(page).toHaveTitle(/Website privacy/);
+  await expect(page.locator("main")).toContainText("GitHub Pages");
+  await expect(
+    page.locator("main a[href*='github-general-privacy-statement']"),
+  ).toBeVisible();
+  const text = (await page.locator("main").textContent()) ?? "";
+  for (const appOnly of ["recordings", "%AppData%", "telemetry", "microphone"]) {
+    expect(text.toLowerCase(), appOnly).not.toContain(appOnly.toLowerCase());
+  }
+});
+
+test("the privacy page makes no claim GitHub doesn't document", async ({
+  page,
+}) => {
+  await page.goto("/privacy");
+  const text = (await page.locator("main").textContent()) ?? "";
+  for (const claim of ["no access to those logs", "OVH", "retain", "user agent"]) {
+    expect(text, claim).not.toContain(claim);
+  }
+});
+
+test("pages load nothing from other origins", async ({page, baseURL}) => {
+  const external = [];
+  page.on("request", (req) => {
+    if (!req.url().startsWith(baseURL) && !req.url().startsWith("data:"))
+      external.push(req.url());
+  });
+  for (const path of ["/", "/privacy"]) {
+    await page.goto(path);
+    await page.waitForLoadState("networkidle");
+  }
+  expect(external).toEqual([]);
 });
 
 test("the footer links to fabiolazzaroni.dev", async ({page}) => {

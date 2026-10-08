@@ -91,7 +91,7 @@ Yes, but your microphone hears the speakers too, so the other side ends up in th
 <details>
 <summary>Does it upload anything?</summary>
 
-No. Duettino never connects to the network: no account, no telemetry, no analytics. Your recordings stay in the folder you choose, and the only other file it writes is a small settings file (your devices and folder) in `%AppData%\Duettino`. Details on the [privacy page](https://duettino.fabiolazzaroni.dev/privacy).
+No. Duettino records only on your PC and never connects to the network: no account, no telemetry, no analytics. Your recordings stay in the folder you choose, and the only other file it writes is a small settings file (your devices and folder) in `%AppData%\Duettino`.
 
 </details>
 
