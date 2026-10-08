@@ -579,7 +579,7 @@ for (const path of ["/", "/it/"]) {
     await page.goto(path);
     const gif = page.locator('main img[src="/assets/web/demo.gif"]');
     await expect(gif).toHaveCount(1);
-    expect(await gif.getAttribute("alt")).toMatch(/\w{20}/);
+    expect((await gif.getAttribute("alt"))?.length).toBeGreaterThan(40);
     const box = await gif.boundingBox();
     expect(Math.round(box.width)).toBe(614);
     expect(Math.round(box.height)).toBe(367);
