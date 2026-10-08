@@ -1,0 +1,92 @@
+---
+import {TEXT, type Lang} from "../utils/constants";
+import GitHubLogo from "./GitHubLogo.astro";
+
+interface Props {
+  lang: Lang;
+}
+
+const {lang} = Astro.props;
+const t = TEXT[lang];
+const privacy = lang === "en" ? "/privacy" : "/it/privacy";
+
+const year = new Date().getFullYear();
+---
+
+<footer class="footer">
+  <div class="inner container">
+    <span>
+      2026{year > 2026 ? ` - ${year}` : ""} | {t.madeBy}{" "}
+      <a href="https://fabiolazzaroni.dev">Fabio Lazzaroni</a> {t.with}{" "}
+      <span role="img" aria-label={t.passion} class="beat">❤</span> {t.and}{" "}
+      <span role="img" aria-label={t.coffee}>☕</span>
+    </span>
+    <span>
+      <a href={privacy}>{t.privacy}</a> -{" "}
+      <a href="https://github.com/fakkio/duettino" class="onlyIcon">
+        <GitHubLogo inverted aria-label={t.sourceCode} />
+      </a>
+    </span>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    background-color: var(--color-invertedBackground);
+    color: var(--color-invertedText);
+    flex: 0 0 auto;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    margin-top: 3rem;
+    transition:
+      color var(--theme-transition-duration),
+      background-color var(--theme-transition-duration);
+  }
+
+  /* The footer is the inverted theme: its links need their own token. */
+  .footer a,
+  .footer a:hover {
+    color: var(--color-invertedLink);
+  }
+
+  .inner {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.25rem 1rem;
+  }
+
+  .beat {
+    display: inline-block;
+    animation: beat 10s infinite;
+    animation-delay: 7.5s;
+    will-change: transform;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .beat {
+      animation: none;
+    }
+  }
+
+  @keyframes beat {
+    0% {
+      transform: scale(1);
+    }
+    2% {
+      transform: scale(1.25);
+    }
+    4% {
+      transform: scale(1);
+    }
+    6% {
+      transform: scale(1.2);
+    }
+    8% {
+      transform: scale(1);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+</style>

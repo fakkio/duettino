@@ -26,6 +26,9 @@ sealed class MainForm : Form
 
     static readonly Source[] Sources = [Source.Input, Source.Output];
 
+    // Every size of Duettino's icon, so the title bar, the taskbar and Alt+Tab take the one that fits the display scaling.
+    static readonly Icon AppIcon = LoadAppIcon();
+
     readonly IDeviceCatalogue catalogue;
     readonly Exception? audioUnavailable; // the Windows audio system can't be reached: no device, Record disabled
     readonly System.Windows.Forms.Timer deviceRefresh = new() { Interval = DeviceRefreshDelayMs };
@@ -43,6 +46,7 @@ sealed class MainForm : Form
     {
         AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, MinimumSize = new Size(75, 0), Padding = new Padding(12, 4, 12, 4), Anchor = AnchorStyles.Left,
     };
+    readonly FlowLayoutPanel recordRow;
     readonly Label elapsed = new()
     {
         Text = FormatElapsed(TimeSpan.Zero), AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(12, 3, 3, 3),
@@ -68,6 +72,7 @@ sealed class MainForm : Form
         AutoScaleDimensions = new SizeF(96F, 96F);
         AutoScaleMode = AutoScaleMode.Dpi;
         Text = Strings.AppTitle;
+        Icon = AppIcon;
         AutoSize = true;
         AutoSizeMode = AutoSizeMode.GrowAndShrink;
         FormBorderStyle = FormBorderStyle.FixedSingle;
@@ -77,7 +82,7 @@ sealed class MainForm : Form
         // Everything that sizes itself also shrinks, so it comes back to its size when the window returns to a lower DPI.
         var folderButtons = new FlowLayoutPanel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Margin = Padding.Empty };
         folderButtons.Controls.AddRange([changeFolderButton, openFolderButton]);
-        var recordRow = new FlowLayoutPanel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Margin = Padding.Empty };
+        recordRow = new FlowLayoutPanel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Margin = Padding.Empty };
         recordRow.Controls.AddRange([recordButton, elapsed]);
 
         var layout = new TableLayoutPanel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, ColumnCount = 2, Dock = DockStyle.Fill, Padding = new Padding(WindowPadding) };
@@ -210,6 +215,12 @@ sealed class MainForm : Form
 
     WindowActivity Activity =>
         finalizing ? WindowActivity.Finalizing : recorder != null ? WindowActivity.Recording : WindowActivity.Idle;
+
+    static Icon LoadAppIcon()
+    {
+        using var stream = typeof(MainForm).Assembly.GetManifestResourceStream("Duettino.ico")!;
+        return new Icon(stream);
+    }
 
     static ComboBox DeviceList() =>
         new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = FieldWidth, Anchor = AnchorStyles.Left | AnchorStyles.Right };
@@ -392,6 +403,9 @@ sealed class MainForm : Form
         recordButton.Text = Strings.StopButton;
         notice.Text = Strings.RecordingNotice;
         elapsed.Text = FormatElapsed(TimeSpan.Zero);
+        // Start holds this thread while Windows opens the devices, which can take a moment: draw the Stop button in full first.
+        recordRow.PerformLayout();
+        Update();
         started.Start(InUseId(Source.Input), InUseId(Source.Output));
         foreach (var (source, follower) in followers) selections[source] = follower.Selection;
         ShowSelections();

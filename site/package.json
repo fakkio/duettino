@@ -1,0 +1,24 @@
+{
+  "name": "duettino-site",
+  "private": true,
+  "description": "Duettino's landing page, generated from the repo's README.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "sync-assets": "node scripts/sync-assets.mjs",
+    "dev": "npm run sync-assets && astro dev",
+    "build": "npm run sync-assets && astro build",
+    "preview": "astro preview",
+    "test": "npm run build && playwright test",
+    "test:browser": "playwright test"
+  },
+  "dependencies": {
+    "astro": "^7.3.5"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.56.0"
+  }
+}

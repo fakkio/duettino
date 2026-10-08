@@ -1,0 +1,73 @@
+/*
+  Palette: light defaults on :root, dark overrides under [data-theme="dark"].
+  The blocking theme script resolves the effective mode and writes data-theme
+  before paint; the prefers-color-scheme block below is a no-JS fallback only,
+  and never overrides an explicit data-theme.
+*/
+
+:root {
+  --color-text: #212529;
+  --color-background: #ffffff;
+  --color-bgTranslucent: #b4c3c744;
+  --color-link: #2470a2;
+  --color-muted: #b4c3c7;
+  --color-invertedText: #ecf0f1;
+  --color-invertedBackground: #34495e;
+  --color-invertedLink: #85c1e9;
+  --color-amstradGreen: #00cc52;
+  --color-hatAccent: #ecf0f1;
+  --color-hatBase: #ffffff;
+  --color-hatLine: #bdc3c7;
+
+  --theme-transition-duration: 0.25s;
+  --underline-bounce-easing: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+  /* The dark palette's literals live here once. Both the explicit
+     [data-theme="dark"] override and the no-JS prefers-color-scheme
+     fallback below just reference these, so a dark-mode colour only ever
+     changes in one place. */
+  --dark-text: #ecf0f1;
+  --dark-background: #2c3e50;
+  --dark-bgTranslucent: #2c3e5044;
+  --dark-link: #85c1e9;
+  --dark-muted: #4d565f;
+  --dark-invertedText: #34495e;
+  --dark-invertedBackground: #ecf0f1;
+  --dark-invertedLink: #2470a2;
+  --dark-amstradGreen: #00ff66;
+  --dark-hatAccent: #34495e;
+  --dark-hatBase: #2c3e50;
+  --dark-hatLine: #253443;
+}
+
+[data-theme="dark"] {
+  --color-text: var(--dark-text);
+  --color-background: var(--dark-background);
+  --color-bgTranslucent: var(--dark-bgTranslucent);
+  --color-link: var(--dark-link);
+  --color-muted: var(--dark-muted);
+  --color-invertedText: var(--dark-invertedText);
+  --color-invertedBackground: var(--dark-invertedBackground);
+  --color-invertedLink: var(--dark-invertedLink);
+  --color-amstradGreen: var(--dark-amstradGreen);
+  --color-hatAccent: var(--dark-hatAccent);
+  --color-hatBase: var(--dark-hatBase);
+  --color-hatLine: var(--dark-hatLine);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --color-text: var(--dark-text);
+    --color-background: var(--dark-background);
+    --color-bgTranslucent: var(--dark-bgTranslucent);
+    --color-link: var(--dark-link);
+    --color-muted: var(--dark-muted);
+    --color-invertedText: var(--dark-invertedText);
+    --color-invertedBackground: var(--dark-invertedBackground);
+    --color-invertedLink: var(--dark-invertedLink);
+    --color-amstradGreen: var(--dark-amstradGreen);
+    --color-hatAccent: var(--dark-hatAccent);
+    --color-hatBase: var(--dark-hatBase);
+    --color-hatLine: var(--dark-hatLine);
+  }
+}

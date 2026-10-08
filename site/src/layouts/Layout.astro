@@ -1,0 +1,107 @@
+---
+import Footer from "../components/Footer.astro";
+import Header from "../components/Header.astro";
+import "../styles/reset.css";
+import "../styles/base.css";
+import "../styles/theme.css";
+import "../styles/global.css";
+import "../styles/duettino.css";
+import {COLOR_MODE_KEY, TEXT, type Lang} from "../utils/constants";
+import {SITE} from "../utils/site.mjs";
+
+interface Props {
+  lang?: Lang;
+  // This page's own path, and its counterpart's in the other language.
+  path: string;
+  counterpart?: string;
+  // Error pages are not part of the English/Italian pair and stay out of search.
+  noindex?: boolean;
+  title?: string;
+  description?: string;
+}
+
+const {
+  lang = "en",
+  path,
+  counterpart,
+  noindex = false,
+  title = TEXT[lang].title,
+  description = TEXT[lang].description,
+} = Astro.props;
+
+const url = new URL(path, SITE).href;
+const counterpartUrl = counterpart && new URL(counterpart, SITE).href;
+const [enUrl, itUrl] = lang === "en" ? [url, counterpartUrl] : [counterpartUrl, url];
+const ogImage = `${SITE}/assets/web/social-dark.png`;
+---
+
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={url} />
+    {
+      counterpart && (
+        <>
+          <link rel="alternate" hreflang="en" href={enUrl} />
+          <link rel="alternate" hreflang="it" href={itUrl} />
+          <link rel="alternate" hreflang="x-default" href={enUrl} />
+        </>
+      )
+    }
+    {noindex && <meta name="robots" content="noindex" />}
+    <link rel="author" href="/humans.txt" />
+    <link rel="icon" href="/assets/web/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/assets/web/favicon.ico" sizes="48x48" />
+    <link rel="apple-touch-icon" href="/assets/web/apple-touch-icon.png" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content={lang === "it" ? "it_IT" : "en_US"} />
+    <meta property="og:url" content={url} />
+    <meta property="og:image" content={ogImage} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+
+    <script is:inline define:vars={{COLOR_MODE_KEY}}>
+      const theme =
+        localStorage.getItem(COLOR_MODE_KEY) ??
+        (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      document.documentElement.dataset.theme = theme;
+    </script>
+  </head>
+  <body>
+    <div class="layout">
+      <Header lang={lang} counterpart={counterpart} />
+      <main class="container">
+        <slot />
+      </main>
+      <Footer lang={lang} />
+    </div>
+  </body>
+</html>
+
+<style>
+  body {
+    background-color: var(--color-background);
+    color: var(--color-text);
+    transition:
+      color var(--theme-transition-duration),
+      background-color var(--theme-transition-duration);
+  }
+
+  .layout {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  main {
+    flex: 1 0 auto;
+  }
+</style>

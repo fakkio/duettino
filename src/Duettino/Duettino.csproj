@@ -8,6 +8,8 @@
     <NeutralLanguage>en</NeutralLanguage>
     <!-- Only the languages the UI speaks: keeps other languages' framework satellites out of the build. -->
     <SatelliteResourceLanguages>en;it</SatelliteResourceLanguages>
+    <!-- Explorer's icon for the executable, single-file publish included. Generated from assets/duettino.svg (assets/README.md). -->
+    <ApplicationIcon>Resources\Duettino.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -31,6 +33,8 @@
       <StronglyTypedNamespace>Duettino.Resources</StronglyTypedNamespace>
       <StronglyTypedClassName>Strings</StronglyTypedClassName>
     </EmbeddedResource>
+    <!-- The window's icon, with every size it is drawn at. -->
+    <EmbeddedResource Include="Resources\Duettino.ico" LogicalName="Duettino.ico" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,54 @@
+---
+import Layout from "../../layouts/Layout.astro";
+---
+
+<Layout
+  lang="it"
+  path="/it/404.html"
+  noindex
+  title="404: Pagina non trovata | Duettino"
+  description="Questa pagina non esiste."
+>
+  <div class="notfound">
+    <h1>404: Pagina non trovata</h1>
+    <img
+      src="/confused-john.gif"
+      alt="John Travolta confuso"
+      class="image"
+      height={(490 / 10) * 4}
+      width={(476 / 10) * 4}
+    />
+    <p>
+      <a href="/it/"><svg class="arrow" viewBox="0 0 448 512" aria-hidden="true"><path d="M448 208v96c0 13.3-10.7 24-24 24H224v103.8c0 21.4-25.8 32.1-41 17L7 273c-9.4-9.4-9.4-24.6 0-34L183 63.3c15.1-15.1 41-4.4 41 17V184h200c13.3 0 24 10.7 24 24z"></path></svg> Torna alla pagina principale</a>
+    </p>
+  </div>
+</Layout>
+
+<style>
+  /* The block sits in the middle of the space between the header and the footer. */
+  :global(main) {
+    display: flex;
+  }
+
+  .notfound {
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .image {
+    height: calc((490px / 10) * 4);
+    width: calc((476px / 10) * 4);
+    max-width: 100%;
+    margin-bottom: 1rem;
+  }
+
+  .arrow {
+    display: inline-block;
+    height: 1.0625em;
+    vertical-align: -0.1875em;
+    fill: currentColor;
+  }
+</style>
