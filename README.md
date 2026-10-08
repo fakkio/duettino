@@ -141,7 +141,7 @@ The executable is written to `src/Duettino/bin/publish/win-x64/`.
 
 ## How it's made
 
-Duettino is designed, tested on real hardware and reviewed by me, [Fabio Lazzaroni](https://fabiolazzaroni.dev). The code is written with AI coding agents (Claude Code). Every decision, with the alternatives turned down, is recorded in [`docs/adr`](docs/adr). The workflow (grilling the brief, ADRs, spec → tickets, TDD) runs on [Matt Pocock's skills](https://github.com/mattpocock/skills).
+Duettino is designed, tested on real hardware and reviewed by me, [Fabio Lazzaroni](https://fabiolazzaroni.dev). The code is written with AI coding agents (Claude Code). Every decision, with the alternatives turned down, is recorded in [`docs/adr`](docs/adr). The workflow (grilling, ADRs, spec → tickets, TDD) runs on [Matt Pocock's skills](https://github.com/mattpocock/skills).
 
 ## License
 

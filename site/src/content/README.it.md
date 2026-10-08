@@ -17,9 +17,9 @@ Teams e Zoom possono registrare una riunione da soli, ma solo se l'organizzatore
 
 **[Scarica Duettino.exe](https://github.com/fakkio/duettino/releases/latest/download/Duettino.exe)** · [Tutte le versioni](https://github.com/fakkio/duettino/releases)
 
-0.1.0 beta · ~55 MB · Windows 10/11 a 64 bit · niente da installare, .NET non serve
+0.1.0 beta · ~55 MB · Windows 10/11 a 64 bit · niente da installare, .NET non necessario
 
-È una beta, provata sul mio hardware: per favore [segnala cosa non va](https://github.com/fakkio/duettino/issues).
+È una beta, provata sul mio hardware: per favore [segnala se qualcosa non va](https://github.com/fakkio/duettino/issues).
 
 > [!NOTE]
 > La prima volta Windows potrebbe dire "Windows ha protetto il PC", perché Duettino è nuovo e Windows ancora non lo conosce: clicca su **Ulteriori informazioni**, poi su **Esegui comunque**. Le [domande frequenti](#domande-frequenti) spiegano il motivo e come controllare che il file sia quello che ho pubblicato.
@@ -39,7 +39,7 @@ Non c'è altro da preparare: nessun plugin, nessun bot che entra nella call, nie
 
 ## Non solo call
 
-Duettino nasce per le call, ma registra tutto ciò che il computer riproduce, insieme alla tua voce. Senza montare uno studio:
+Duettino nasce per le call, ma registra tutto ciò che il computer riproduce, insieme alla tua voce. Nessuno studio da allestire:
 
 - **Webinar e lezioni online**: chi parla, e le domande che hai fatto tu.
 - **Video commentati**: la tua voce sopra il video o la diretta che stai guardando.
@@ -140,7 +140,7 @@ L'eseguibile viene scritto in `src/Duettino/bin/publish/win-x64/`.
 
 ## Come è fatto
 
-Duettino è progettato, provato su hardware reale e rivisto da me, [Fabio Lazzaroni](https://fabiolazzaroni.dev). Il codice è scritto con agenti di programmazione AI (Claude Code). Ogni decisione, con le alternative scartate, è registrata in [`docs/adr`](docs/adr). Il flusso di lavoro (mettere sotto torchio il brief, ADR, specifica → ticket, TDD) si basa sulle [skill di Matt Pocock](https://github.com/mattpocock/skills).
+Duettino è progettato, provato su hardware reale e rivisto da me, [Fabio Lazzaroni](https://fabiolazzaroni.dev). Il codice è stato scritto con agenti di programmazione AI (Claude Code). Ogni decisione, con le alternative scartate, è registrata in [`docs/adr`](docs/adr). Il flusso di lavoro  (grilling, ADRs, spec → tickets, TDD) si basa sulle [skill di Matt Pocock](https://github.com/mattpocock/skills).
 
 ## Licenza
 
