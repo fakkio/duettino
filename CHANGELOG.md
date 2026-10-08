@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-08
+
 ### Added
 - Record what you say and what you hear into one file: pick any Input (a microphone, line-in or virtual cable) and any Output (headphones, speakers, HDMI…), press Record, and both are captured at once, the Output through Windows' own Loopback capture with no drivers to install.
 - Stop produces one MP3 Recording file (48 kHz stereo, 128 kbps) in `Documents\Duettino`, named after its start time, never overwriting an existing file; on Windows N editions without the Media Feature Pack it is a WAV file, with a message explaining how to get MP3.
@@ -33,4 +35,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add an Italian landing page at `/it/`, adapted rather than translated, and the website's privacy page in Italian, with an EN/IT link in the header and no automatic redirect by browser language (not live until the first release).
 - Give the landing page a 404 page, in English and in Italian for missing pages under `/it/`, and a `humans.txt` naming its author (not live until the first release).
 
-[Unreleased]: https://github.com/fakkio/duettino/commits/develop
+[Unreleased]: https://github.com/fakkio/duettino/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/fakkio/duettino/releases/tag/v0.1.0
