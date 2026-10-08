@@ -7,9 +7,9 @@
 
 **Registra quello che dici e quello che senti.**
 
-Con le cuffie, l'altro lato di una call non esce mai dal computer, quindi un registratore sulla scrivania sente solo te. Duettino è un piccolo programma gratuito per Windows che registra insieme il tuo microfono e l'audio del PC, quello che senti nelle cuffie, in un unico MP3: registrare audio del PC e microfono contemporaneamente, senza giri strani.
+Con le cuffie, l'altro lato di una call non esce mai dal computer, quindi un registratore sulla scrivania sente solo te. Duettino è un piccolo programma gratuito per Windows che registra insieme il tuo microfono e ciò che suona nelle cuffie, in un unico MP3.
 
-Teams e Zoom possono registrare una riunione da soli, ma solo se l'organizzatore o la tua azienda lo permette, e le chiamate di WhatsApp o Discord non si possono registrare così. Duettino funziona con tutte, perché registra il tuo computer, non la chiamata.
+Teams e Zoom possono registrare una riunione da soli, ma solo se l'organizzatore o la tua azienda lo permette, e le chiamate di WhatsApp o Discord non si possono registrare. Duettino funziona con tutte, perché registra l'audio del tuo PC, non la chiamata.
 
 <!-- Placeholder until the GIF is recorded: about 10 s, looped, cropped to the window, Italian UI, saving to D:\Recordings.
      Devices chosen → Record → meters and timer moving → Stop → "Saving…" → "Saved Duettino_….mp3". -->
@@ -23,8 +23,6 @@ Teams e Zoom possono registrare una riunione da soli, ma solo se l'organizzatore
 
 È una beta, provata sul mio hardware: per favore [segnala cosa non va](https://github.com/fakkio/duettino/issues).
 
-La finestra di Duettino parla italiano su un Windows in italiano, inglese su tutti gli altri.
-
 > [!NOTE]
 > La prima volta Windows potrebbe dire "Windows ha protetto il PC", perché Duettino è nuovo e Windows ancora non lo conosce: clicca su **Ulteriori informazioni**, poi su **Esegui comunque**. Le [domande frequenti](#domande-frequenti) spiegano il motivo e come controllare che il file sia quello che ho pubblicato.
 
@@ -32,10 +30,10 @@ La finestra di Duettino parla italiano su un Windows in italiano, inglese su tut
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/web/how-it-works-dark.svg">
-  <img src="assets/web/how-it-works-light.svg" alt="Quello che dici (l'ingresso: il tuo microfono) e quello che senti (l'uscita: le tue cuffie) si uniscono in un solo MP3 in Documenti\Duettino.">
+  <img src="assets/web/how-it-works-light.svg" alt="Quello che dici (l'Ingresso: il tuo microfono) e quello che senti (l'Uscita: le tue cuffie) si uniscono in un solo MP3 in Documenti\Duettino.">
 </picture>
 
-1. **Scegli il microfono come ingresso e le cuffie come uscita.** Se ne hai più di un paio, scegli quello su cui suona l'app della call. Non devono essere un unico auricolare: va bene anche un microfono USB con le casse del portatile.
+1. **Scegli il microfono come Ingresso e le cuffie come Uscita.** Se ne hai più di un paio, scegli quello su cui suona l'app della call. Non devono essere un unico auricolare: va bene anche un microfono USB con le casse del portatile.
 2. **Premi Registra.** Un indicatore per lato si muove mentre parli e ascolti, e parte un timer.
 3. **Premi Stop.** Dopo qualche secondo l'MP3 è in `Documenti\Duettino`, con il nome dell'ora in cui hai iniziato, come `Duettino_2026-10-07_15-30-00.mp3`. Un'ora pesa circa 60 MB.
 
@@ -47,7 +45,7 @@ Duettino nasce per le call, ma registra tutto ciò che il computer riproduce, in
 
 - **Webinar e lezioni online**: chi parla, e le domande che hai fatto tu.
 - **Video commentati**: la tua voce sopra il video o la diretta che stai guardando.
-- **Prove su una base musicale**: canta o suona insieme alla base, poi ascolta come suonate insieme.
+- **Cantare o suonare su una base musicale**: registra la tua voce insieme alla base, poi ascolta come suonate insieme.
 - **Podcast a distanza**: il tuo ospite dalla chiamata e tu dal microfono, in un solo file.
 
 ## Cosa fa per te
@@ -76,7 +74,7 @@ Duettino registra qualsiasi cuffia o cassa, USB e Bluetooth comprese, e il tuo m
 <details>
 <summary>Funziona con le cuffie Bluetooth?</summary>
 
-Sì, con un limite che viene dal Bluetooth stesso. Mentre il microfono dell'auricolare è in uso, da Duettino o dall'app della call, Windows mette l'auricolare in una modalità "vivavoce" che suona come un vecchio telefono: ovattata, senza alti. Tutto ciò che senti nell'auricolare suona così, non solo la call, e così anche la registrazione. Ogni passaggio lascia inoltre un secondo o due di silenzio, nelle tue orecchie e nella registrazione.
+Sì, con un limite che viene dal Bluetooth stesso. Mentre il microfono dell'auricolare è in uso, da Duettino o dall'app della call, Windows mette l'auricolare in una modalità "vivavoce" che suona come un vecchio telefono: ovattata, senza alti. Tutto ciò che senti nell'auricolare suona così, non solo la call, e così anche la registrazione. Ogni cambio di modalità lascia inoltre un secondo o due di silenzio, nelle tue orecchie e nella registrazione.
 
 Per la qualità piena, usa un altro microfono, come quello del portatile o uno USB, sia in Duettino sia nell'app della call.
 
