@@ -38,6 +38,13 @@ createServer(async (req, res) => {
       // try the next candidate
     }
   }
-  res.writeHead(404, {"content-type": "text/plain"});
-  res.end("Not found");
+  // Like GitHub Pages: a missing URL gets the site's own 404 page.
+  try {
+    const body = await readFile(join(root, "404.html"));
+    res.writeHead(404, {"content-type": TYPES[".html"]});
+    res.end(body);
+  } catch {
+    res.writeHead(404, {"content-type": "text/plain"});
+    res.end("Not found");
+  }
 }).listen(port, () => console.log(`serving dist on http://localhost:${port}`));

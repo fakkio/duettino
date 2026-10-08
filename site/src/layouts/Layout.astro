@@ -13,7 +13,9 @@ interface Props {
   lang?: Lang;
   // This page's own path, and its counterpart's in the other language.
   path: string;
-  counterpart: string;
+  counterpart?: string;
+  // Error pages are not part of the English/Italian pair and stay out of search.
+  noindex?: boolean;
   title?: string;
   description?: string;
 }
@@ -22,12 +24,13 @@ const {
   lang = "en",
   path,
   counterpart,
+  noindex = false,
   title = TEXT[lang].title,
   description = TEXT[lang].description,
 } = Astro.props;
 
 const url = new URL(path, SITE).href;
-const counterpartUrl = new URL(counterpart, SITE).href;
+const counterpartUrl = counterpart && new URL(counterpart, SITE).href;
 const [enUrl, itUrl] = lang === "en" ? [url, counterpartUrl] : [counterpartUrl, url];
 const ogImage = `${SITE}/assets/web/social-dark.png`;
 ---
@@ -40,9 +43,17 @@ const ogImage = `${SITE}/assets/web/social-dark.png`;
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={url} />
-    <link rel="alternate" hreflang="en" href={enUrl} />
-    <link rel="alternate" hreflang="it" href={itUrl} />
-    <link rel="alternate" hreflang="x-default" href={enUrl} />
+    {
+      counterpart && (
+        <>
+          <link rel="alternate" hreflang="en" href={enUrl} />
+          <link rel="alternate" hreflang="it" href={itUrl} />
+          <link rel="alternate" hreflang="x-default" href={enUrl} />
+        </>
+      )
+    }
+    {noindex && <meta name="robots" content="noindex" />}
+    <link rel="author" href="/humans.txt" />
     <link rel="icon" href="/assets/web/favicon.svg" type="image/svg+xml" />
     <link rel="icon" href="/assets/web/favicon.ico" sizes="48x48" />
     <link rel="apple-touch-icon" href="/assets/web/apple-touch-icon.png" />

@@ -4,7 +4,7 @@ import DarkToggle from "./DarkToggle.astro";
 
 interface Props {
   lang: Lang;
-  counterpart: string;
+  counterpart?: string;
 }
 
 const {lang, counterpart} = Astro.props;
@@ -19,12 +19,12 @@ const other = lang === "en" ? "it" : "en";
     <h1>Duettino</h1>
   </div>
   <nav class="actions" aria-label={lang === "en" ? "Language and theme" : "Lingua e tema"}>
-    <a
+    {counterpart && <a
       class="lang-switch"
       href={counterpart}
       lang={other}
       hreflang={other}
-      aria-label={t.switchAria}>{t.switchLabel}</a>
+      aria-label={t.switchAria}>{t.switchLabel}</a>}
     <DarkToggle lang={lang} />
   </nav>
 </header>
