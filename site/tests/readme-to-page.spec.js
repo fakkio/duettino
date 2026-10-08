@@ -97,3 +97,17 @@ test("the README's icon and title are left to the header", () => {
   expect(html).not.toContain("<h1");
   expect(html).toContain("<h2>Download</h2>");
 });
+
+const renderIt = (markdown) =>
+  markdownToHtml(markdown, {
+    mdastPlugins: [readmeToPage],
+    fileURL: new URL("file:///site/src/content/README.it.md"),
+  }).html;
+
+test("a file named *.it.md gets the Italian headline bands and note label", () => {
+  const headline = renderIt("**Registra quello che dici e quello che senti.**");
+  expect(headline).toContain(
+    '<p class="bigline">Registra <span class="say">quello che dici</span> e <span class="hear">quello che senti</span>.</p>',
+  );
+  expect(renderIt("> [!NOTE]\n> Attenzione.")).toContain('<p class="note-label">Nota</p>');
+});

@@ -6,22 +6,33 @@ import "../styles/base.css";
 import "../styles/theme.css";
 import "../styles/global.css";
 import "../styles/duettino.css";
-import {COLOR_MODE_KEY, SITE_METADATA} from "../utils/constants";
+import {COLOR_MODE_KEY, TEXT, type Lang} from "../utils/constants";
 import {SITE} from "../utils/site.mjs";
 
 interface Props {
+  lang?: Lang;
+  // This page's own path, and its counterpart's in the other language.
+  path: string;
+  counterpart: string;
   title?: string;
   description?: string;
 }
 
-const {title = SITE_METADATA.title, description = SITE_METADATA.description} =
-  Astro.props;
+const {
+  lang = "en",
+  path,
+  counterpart,
+  title = TEXT[lang].title,
+  description = TEXT[lang].description,
+} = Astro.props;
 
-const url = new URL(Astro.url.pathname, SITE).href;
+const url = new URL(path, SITE).href;
+const counterpartUrl = new URL(counterpart, SITE).href;
+const [enUrl, itUrl] = lang === "en" ? [url, counterpartUrl] : [counterpartUrl, url];
 const ogImage = `${SITE}/assets/web/social-dark.png`;
 ---
 
-<html lang="en">
+<html lang={lang}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -29,12 +40,16 @@ const ogImage = `${SITE}/assets/web/social-dark.png`;
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={url} />
+    <link rel="alternate" hreflang="en" href={enUrl} />
+    <link rel="alternate" hreflang="it" href={itUrl} />
+    <link rel="alternate" hreflang="x-default" href={enUrl} />
     <link rel="icon" href="/assets/web/favicon.svg" type="image/svg+xml" />
     <link rel="icon" href="/assets/web/favicon.ico" sizes="48x48" />
     <link rel="apple-touch-icon" href="/assets/web/apple-touch-icon.png" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
+    <meta property="og:locale" content={lang === "it" ? "it_IT" : "en_US"} />
     <meta property="og:url" content={url} />
     <meta property="og:image" content={ogImage} />
     <meta name="twitter:card" content="summary_large_image" />
@@ -51,11 +66,11 @@ const ogImage = `${SITE}/assets/web/social-dark.png`;
   </head>
   <body>
     <div class="layout">
-      <Header />
+      <Header lang={lang} counterpart={counterpart} />
       <main class="container">
         <slot />
       </main>
-      <Footer />
+      <Footer lang={lang} />
     </div>
   </body>
 </html>

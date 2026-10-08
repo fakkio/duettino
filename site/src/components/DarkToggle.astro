@@ -12,9 +12,26 @@
 // prefers-reduced-motion) just flip the attribute directly, same as before.
 // The button disables itself for the duration of the transition rather than
 // supporting overlapping reveals, which isn't worth the complexity here.
+
+import {TEXT, type Lang} from "../utils/constants";
+
+interface Props {
+  lang?: Lang;
+}
+
+const {lang = "en"} = Astro.props;
+const t = TEXT[lang];
 ---
 
-<button type="button" class="toggle" data-dark-toggle aria-pressed="false" aria-label="Switch to the dark theme">
+<button
+  type="button"
+  class="toggle"
+  data-dark-toggle
+  data-label-light={t.toggleToDark}
+  data-label-dark={t.toggleToLight}
+  aria-pressed="false"
+  aria-label={t.toggleToDark}
+>
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width="32"
@@ -131,13 +148,14 @@
 <script>
   import {COLOR_MODE_KEY} from "../utils/constants";
 
-  const LABELS = {
-    light: "Switch to the dark theme",
-    dark: "Switch to the light theme",
-  };
-
   const button =
     document.querySelector<HTMLButtonElement>("[data-dark-toggle]");
+
+  // The label offers the other theme, in the page's language.
+  const LABELS = {
+    light: button?.dataset.labelLight ?? "",
+    dark: button?.dataset.labelDark ?? "",
+  };
 
   const sync = (theme: string) => {
     button?.setAttribute("aria-label", LABELS[theme as keyof typeof LABELS]);

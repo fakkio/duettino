@@ -1,5 +1,15 @@
 ---
+import {TEXT, type Lang} from "../utils/constants";
 import DarkToggle from "./DarkToggle.astro";
+
+interface Props {
+  lang: Lang;
+  counterpart: string;
+}
+
+const {lang, counterpart} = Astro.props;
+const t = TEXT[lang];
+const other = lang === "en" ? "it" : "en";
 ---
 
 <header class="header container">
@@ -8,7 +18,15 @@ import DarkToggle from "./DarkToggle.astro";
     <img class="theme-dark" src="/assets/web/icon-dark.svg" alt="" width="56" height="56" />
     <h1>Duettino</h1>
   </div>
-  <DarkToggle />
+  <nav class="actions" aria-label={lang === "en" ? "Language and theme" : "Lingua e tema"}>
+    <a
+      class="lang-switch"
+      href={counterpart}
+      lang={other}
+      hreflang={other}
+      aria-label={t.switchAria}>{t.switchLabel}</a>
+    <DarkToggle lang={lang} />
+  </nav>
 </header>
 
 <style>
@@ -35,8 +53,11 @@ import DarkToggle from "./DarkToggle.astro";
     margin: 0;
   }
 
-  /* The toggle stays on the right, even when the row wraps. */
-  .header :global([data-dark-toggle]) {
+  /* The language link and the toggle stay on the right, even when the row wraps. */
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
     margin-left: auto;
   }
 </style>

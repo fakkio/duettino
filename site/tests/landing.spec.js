@@ -6,7 +6,10 @@ import {gotoWithTheme} from "./color-mode.js";
 const PAGES = [
   {name: "index", path: "/"},
   {name: "privacy", path: "/privacy"},
+  {name: "it index", path: "/it/"},
+  {name: "it privacy", path: "/it/privacy"},
 ];
+const ALL_PATHS = PAGES.map((p) => p.path);
 const THEMES = /** @type {const} */ (["light", "dark"]);
 const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
@@ -140,7 +143,7 @@ test("every internal link, image and anchor resolves", async ({
   page,
   request,
 }) => {
-  for (const path of ["/", "/privacy"]) {
+  for (const path of ALL_PATHS) {
     await page.goto(path);
     const refs = await page.evaluate(() => {
       const out = [];
@@ -226,7 +229,7 @@ test("pages load nothing from other origins", async ({page, baseURL}) => {
     if (!req.url().startsWith(baseURL) && !req.url().startsWith("data:"))
       external.push(req.url());
   });
-  for (const path of ["/", "/privacy"]) {
+  for (const path of ALL_PATHS) {
     await page.goto(path);
     await page.waitForLoadState("networkidle");
   }
@@ -242,7 +245,7 @@ test("the footer links to fabiolazzaroni.dev", async ({page}) => {
 
 test("a phone-width page doesn't scroll horizontally", async ({page}) => {
   await page.setViewportSize({width: 360, height: 800});
-  for (const path of ["/", "/privacy"]) {
+  for (const path of ALL_PATHS) {
     await page.goto(path);
     const overflow = await page.evaluate(
       () =>
@@ -305,11 +308,11 @@ test("on a phone the diagram's box reads One MP3", async ({page}) => {
   await expect(box).toContainText("in Documents\\Duettino");
 });
 
-for (const theme of THEMES) {
-  test(`the headline's letters measure 3:1 over each band, ${theme}`, async ({
+for (const [theme, home] of THEMES.flatMap((t) => [[t, "/"], [t, "/it/"]])) {
+  test(`the headline's letters measure 3:1 over each band, ${theme}, ${home}`, async ({
     page,
   }) => {
-    await gotoWithTheme(page, "/", theme);
+    await gotoWithTheme(page, home, theme);
     const colors = await page.locator("p.bigline").evaluate((p) => {
       const rgb = (css) => css.match(/rgba?\([^)]*\)/)[0].match(/[\d.]+/g).slice(0, 3).map(Number);
       const read = (el) => ({
@@ -414,4 +417,107 @@ test("no dot separates the Download button from All releases", async ({page}) =>
   const row = page.locator("main p", {has: page.locator("a.btn")});
   await expect(row.getByRole("link", {name: "All releases"})).toBeVisible();
   expect(await row.innerText()).not.toContain("·");
+});
+
+const PAIRS = [
+  {lang: "en", path: "/", other: "/it/"},
+  {lang: "it", path: "/it/", other: "/"},
+  {lang: "en", path: "/privacy", other: "/it/privacy"},
+  {lang: "it", path: "/it/privacy", other: "/privacy"},
+];
+
+for (const {lang, path, other} of PAIRS) {
+  test(`${path} declares ${lang}, its hreflang pair and links to ${other}`, async ({
+    page,
+  }) => {
+    await page.goto(path);
+    await expect(page.locator("html")).toHaveAttribute("lang", lang);
+
+    const alternates = await page
+      .locator('link[rel="alternate"][hreflang]')
+      .evaluateAll((els) =>
+        Object.fromEntries(els.map((e) => [e.hreflang, e.getAttribute("href")])),
+      );
+    const enPath = lang === "en" ? path : other;
+    const itPath = lang === "it" ? path : other;
+    expect(alternates).toEqual({
+      en: `${SITE}${enPath}`,
+      it: `${SITE}${itPath}`,
+      "x-default": `${SITE}${enPath}`,
+    });
+
+    const link = page.locator("header a.lang-switch");
+    await expect(link).toHaveAttribute("href", other);
+    await expect(link).toHaveAttribute("hreflang", lang === "en" ? "it" : "en");
+    await link.focus();
+    await expect(link).toBeFocused();
+  });
+
+  test(`${path} doesn't redirect by browser language`, async ({browser, baseURL}) => {
+    const context = await browser.newContext({
+      baseURL,
+      locale: lang === "en" ? "it-IT" : "en-US",
+    });
+    const page = await context.newPage();
+    await page.goto(path);
+    expect(new URL(page.url()).pathname).toBe(path);
+    await context.close();
+  });
+}
+
+test("the Italian home page is the whole page in Italian, with layout D", async ({
+  page,
+}) => {
+  await page.goto("/it/");
+  await expect(page).toHaveTitle(/registra quello che dici/);
+
+  const headline = page.locator("p.bigline");
+  await expect(headline).toHaveText("Registra quello che dici e quello che senti.");
+  await expect(headline.locator(".say")).toHaveText("quello che dici");
+  await expect(headline.locator(".hear")).toHaveText("quello che senti");
+
+  const button = page.locator("main a.btn");
+  await expect(button).toHaveCount(1);
+  await expect(button).toHaveText("Scarica Duettino.exe");
+  await expect(button).toHaveAttribute(
+    "href",
+    "https://github.com/fakkio/duettino/releases/latest/download/Duettino.exe",
+  );
+
+  const diagram = page.locator("figure.flow");
+  await expect(diagram).toHaveCount(1);
+  await expect(diagram).toHaveAttribute("aria-label", /si uniscono in un solo MP3/);
+  await expect(diagram.locator(".say")).toContainText("Ingresso: il tuo microfono");
+  await expect(page.locator('img[src*="how-it-works"]')).toHaveCount(0);
+
+  await expect(page.getByRole("note").locator(".note-label")).toHaveText("Nota");
+  await expect(page.getByText("Perché non usare il Missaggio stereo?")).toBeVisible();
+  await expect(page.locator("main")).toContainText("registrare audio del PC e microfono contemporaneamente");
+  await expect(page.locator("main")).not.toContainText("Gaming");
+  await expect(page.locator("main")).not.toContainText("[!NOTE]");
+});
+
+test("both home pages say the app speaks English and Italian", async ({page}) => {
+  await page.goto("/");
+  await expect(page.locator("main")).toContainText("English and Italian");
+  await page.goto("/it/");
+  await expect(page.locator("main")).toContainText("Italiano e inglese");
+});
+
+test("on a phone the Italian diagram's box reads Un solo MP3", async ({page}) => {
+  await page.setViewportSize({width: 360, height: 800});
+  await page.goto("/it/");
+  await expect(page.locator(".flow-result")).toHaveText("Un solo MP3", {useInnerText: true});
+});
+
+test("the Italian privacy page speaks Italian and the toggle too", async ({page}) => {
+  await page.goto("/it/privacy");
+  await expect(page).toHaveTitle(/Privacy del sito/);
+  await expect(page.locator("main")).toContainText("GitHub Pages");
+  await expect(page.locator("[data-dark-toggle]")).toHaveAttribute(
+    "aria-label",
+    /Passa al tema/,
+  );
+  await expect(page.locator("footer")).toContainText("Realizzato da Fabio Lazzaroni con ❤ e ☕");
+  await expect(page.locator("footer a[href='/it/privacy']")).toBeVisible();
 });

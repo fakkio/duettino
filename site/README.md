@@ -1,6 +1,6 @@
 # Duettino's landing page
 
-An Astro project (Astro alone, no integrations) that builds `duettino.fabiolazzaroni.dev`. The English page `/` is the repo's root `README.md`, turned into a page by `src/plugins/readme-to-page.mjs`, so the two can't drift apart.
+An Astro project (Astro alone, no integrations) that builds `duettino.fabiolazzaroni.dev`. The English page `/` is the repo's root `README.md`, turned into a page by `src/plugins/readme-to-page.mjs`, so the two can't drift apart. The Italian page `/it/` comes the same way from `src/content/README.it.md`, an adaptation of the README (the README itself stays English-only). `/privacy` and `/it/privacy` are plain pages.
 
 ```
 npm install

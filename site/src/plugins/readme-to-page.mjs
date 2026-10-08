@@ -7,6 +7,28 @@ import {SITE} from "../utils/site.mjs";
 
 const REPO = "https://github.com/fakkio/duettino";
 
+// What the plugin writes itself (the diagram's words, the note's label) and
+// the headline's two phrases, per language. A file named *.it.md is Italian.
+const LANGS = {
+  en: {
+    say: "what you say",
+    hear: "what you hear",
+    sayLane: ["What you say", "Input: your microphone"],
+    hearLane: ["What you hear", "Output: your headphones"],
+    result: ["One MP3", "in Documents\\Duettino"],
+    note: "Note",
+  },
+  it: {
+    say: "quello che dici",
+    hear: "quello che senti",
+    sayLane: ["Quello che dici", "Ingresso: il tuo microfono"],
+    hearLane: ["Quello che senti", "Uscita: le tue cuffie"],
+    result: ["Un solo MP3", "in Documenti\\Duettino"],
+    note: "Nota",
+  },
+};
+const langOf = (ctx) => (/\.it\.md$/.test(ctx.fileURL?.pathname ?? "") ? "it" : "en");
+
 const isRelative = (url) =>
   !/^([a-z][a-z0-9+.-]*:|\/\/|#|\/)/i.test(url);
 
@@ -52,33 +74,32 @@ const escapeHtml = (text) =>
 
 // The README's image carries the description; the drawing is hidden from
 // screen readers so it isn't read twice.
-const diagramHtml = (description) => `<figure class="flow" role="img" aria-label="${escapeHtml(description)}">
+const diagramHtml = (description, t) => `<figure class="flow" role="img" aria-label="${escapeHtml(description)}">
 <div class="flow-lanes" aria-hidden="true">
-<div class="lane say"><b>What you say</b><span>Input: your microphone</span></div>
-<div class="lane hear"><b>What you hear</b><span>Output: your headphones</span></div>
+<div class="lane say"><b>${t.sayLane[0]}</b><span>${t.sayLane[1]}</span></div>
+<div class="lane hear"><b>${t.hearLane[0]}</b><span>${t.hearLane[1]}</span></div>
 </div>
 <svg aria-hidden="true" viewBox="0 0 200 112" preserveAspectRatio="none">
 <path d="${strand(1)}" fill="none" stroke="var(--c2)" stroke-width="8" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
 <path d="${strand(-1)}" fill="none" stroke="var(--c1)" stroke-width="8" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
 </svg>
-<div class="flow-result" aria-hidden="true"><b>One MP3</b><span>in Documents\\Duettino</span></div>
+<div class="flow-result" aria-hidden="true"><b>${t.result[0]}</b><span>${t.result[1]}</span></div>
 </figure>`;
 
 const DIAGRAM_PICTURE =
-  /<picture>\s*<source[^>]*how-it-works[^>]*>\s*<img[^>]*alt=["']([^"']*)["'][^>]*>\s*<\/picture>/;
+  /<picture>\s*<source[^>]*how-it-works[^>]*>\s*<img[^>]*alt=(?:"([^"]*)"|'([^']*)')[^>]*>\s*<\/picture>/;
 
-const rewriteHtml = (html) =>
-  pictureToThemedImages(html.replace(DIAGRAM_PICTURE, (_, alt) => diagramHtml(alt)))
+const rewriteHtml = (html, t) =>
+  pictureToThemedImages(html.replace(DIAGRAM_PICTURE, (_, dq, sq) => diagramHtml(dq ?? sq, t)))
     .replace(/\b(src|srcset)=["']([^"']*)["']/g, (_, attr, url) => `${attr}="${rewriteUrl(url)}"`)
     .replace(/\bhref=["']([^"']*)["']/g, (_, url) => `href="${rewriteUrl(url)}"`);
 
 const ICON_PICTURE = /<picture>[\s\S]*icon-(light|dark)\.svg/;
 const DOWNLOAD_URL = `${REPO}/releases/latest/download/Duettino.exe`;
-const HEADLINE = /what you say.*what you hear/;
 
 const NOTE_MARKER = /^\[!NOTE\]\s*/;
-const NOTE_OPEN =
-  '<div class="note" role="note"><p class="note-label">Note</p>';
+const noteOpen = (label) =>
+  `<div class="note" role="note"><p class="note-label">${label}</p>`;
 
 export const readmeToPage = {
   name: "readme-to-page",
@@ -102,11 +123,13 @@ export const readmeToPage = {
     const [only] = node.children;
     const text = only?.children?.[0];
     if (node.children.length !== 1 || only.type !== "strong" || text?.type !== "text") return;
-    if (!HEADLINE.test(text.value)) return;
-    const wrapped = escapeHtml(text.value).replace(
-      /what you (say|hear)/g,
-      (phrase, which) => `<span class="${which}">${phrase}</span>`,
-    );
+    const t = LANGS[langOf(ctx)];
+    const say = text.value.indexOf(t.say);
+    const hear = text.value.indexOf(t.hear);
+    if (say < 0 || hear < say) return;
+    const wrapped = escapeHtml(text.value)
+      .replace(t.say, `<span class="say">${t.say}</span>`)
+      .replace(t.hear, `<span class="hear">${t.hear}</span>`);
     ctx.replaceNode(node, {type: "html", value: `<p class="bigline">${wrapped}</p>`});
   },
   // A step's text, with its inline code and bold, is one grid cell next to the
@@ -133,7 +156,7 @@ export const readmeToPage = {
   },
   html(node, ctx) {
     if (ICON_PICTURE.test(node.value)) return ctx.removeNode(node);
-    ctx.replaceNode(node, {type: "html", value: rewriteHtml(node.value)});
+    ctx.replaceNode(node, {type: "html", value: rewriteHtml(node.value, LANGS[langOf(ctx)])});
   },
   // GitHub's "> [!NOTE]" alert: plain Markdown would print the marker.
   blockquote(node, ctx) {
@@ -141,7 +164,7 @@ export const readmeToPage = {
     if (text?.type !== "text" || !NOTE_MARKER.test(text.value)) return;
     ctx.setProperty(text, "value", text.value.replace(NOTE_MARKER, ""));
     ctx.replaceNode(node, [
-      {type: "html", value: NOTE_OPEN},
+      {type: "html", value: noteOpen(LANGS[langOf(ctx)].note)},
       ...node.children,
       {type: "html", value: "</div>"},
     ]);
