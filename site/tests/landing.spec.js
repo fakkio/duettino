@@ -386,7 +386,7 @@ test("the footer carries the copyright, the credit and the GitHub icon", async (
   await page.goto("/");
   const footer = page.locator("footer");
   await expect(footer).toContainText(`${new Date().getFullYear() > 2026 ? "2026 - " : "2026"}`);
-  await expect(footer).toContainText("Made by Fabio Lazzaroni with ❤ and ☕");
+  await expect(footer).toContainText("Made by Fabio with ❤ and ☕");
   const github = footer.getByRole("link", {name: /source code on GitHub/});
   await expect(github).toHaveAttribute("href", "https://github.com/fakkio/duettino");
   await expect(footer.getByText("Source code")).toHaveCount(0);
@@ -520,7 +520,7 @@ test("the Italian privacy page speaks Italian and the toggle too", async ({page}
     "aria-label",
     /Passa al tema/,
   );
-  await expect(page.locator("footer")).toContainText("Realizzato da Fabio Lazzaroni con ❤ e ☕");
+  await expect(page.locator("footer")).toContainText("Realizzato da Fabio con ❤ e ☕");
   await expect(page.locator("footer a[href='/it/privacy']")).toBeVisible();
 });
 

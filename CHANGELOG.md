@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Shorten the landing page footer credit to "Made by Fabio", so the coffee emoji no longer wraps alone onto its own line on phones.
+
 ## [0.1.0] - 2026-10-08
 
 ### Added
