@@ -46,6 +46,7 @@ sealed class MainForm : Form
     {
         AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, MinimumSize = new Size(75, 0), Padding = new Padding(12, 4, 12, 4), Anchor = AnchorStyles.Left,
     };
+    readonly FlowLayoutPanel recordRow;
     readonly Label elapsed = new()
     {
         Text = FormatElapsed(TimeSpan.Zero), AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(12, 3, 3, 3),
@@ -81,7 +82,7 @@ sealed class MainForm : Form
         // Everything that sizes itself also shrinks, so it comes back to its size when the window returns to a lower DPI.
         var folderButtons = new FlowLayoutPanel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Margin = Padding.Empty };
         folderButtons.Controls.AddRange([changeFolderButton, openFolderButton]);
-        var recordRow = new FlowLayoutPanel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Margin = Padding.Empty };
+        recordRow = new FlowLayoutPanel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Margin = Padding.Empty };
         recordRow.Controls.AddRange([recordButton, elapsed]);
 
         var layout = new TableLayoutPanel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, ColumnCount = 2, Dock = DockStyle.Fill, Padding = new Padding(WindowPadding) };
@@ -402,6 +403,9 @@ sealed class MainForm : Form
         recordButton.Text = Strings.StopButton;
         notice.Text = Strings.RecordingNotice;
         elapsed.Text = FormatElapsed(TimeSpan.Zero);
+        // Start holds this thread while Windows opens the devices, which can take a moment: draw the Stop button in full first.
+        recordRow.PerformLayout();
+        Update();
         started.Start(InUseId(Source.Input), InUseId(Source.Output));
         foreach (var (source, follower) in followers) selections[source] = follower.Selection;
         ShowSelections();
