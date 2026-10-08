@@ -558,3 +558,17 @@ test("humans.txt names the author and is linked from every page", async ({
     await expect(page.locator('link[rel="author"]')).toHaveAttribute("href", "/humans.txt");
   }
 });
+
+for (const path of ["/404.html", "/it/404.html"]) {
+  test(`${path} centers its block between the header and the footer`, async ({page}) => {
+    await page.setViewportSize({width: 1000, height: 900});
+    await page.goto(path);
+    const [block, main] = await Promise.all([
+      page.locator(".notfound").boundingBox(),
+      page.locator("main").boundingBox(),
+    ]);
+    const viewport = page.viewportSize();
+    expect(Math.abs(block.x + block.width / 2 - viewport.width / 2)).toBeLessThan(2);
+    expect(Math.abs(block.y + block.height / 2 - (main.y + main.height / 2))).toBeLessThan(2);
+  });
+}
