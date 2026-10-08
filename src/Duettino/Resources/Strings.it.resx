@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Italian UI strings. Every key in Strings.resx has its translation here (LocalizationTests checks it).
+  Glossary terms in Italian, as in the original Italian brief:
+    Input → Ingresso, Output → Uscita, Recording → registrazione, Recording file → file della registrazione,
+    Working file → file di lavoro.
+  Ingresso is masculine and Uscita feminine: phrase sentences with {0} = Ingresso/Uscita so no word agrees with it.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AppTitle" xml:space="preserve">
+    <value>Duettino</value>
+  </data>
+  <data name="InputLabel" xml:space="preserve">
+    <value>Ingresso:</value>
+  </data>
+  <data name="OutputLabel" xml:space="preserve">
+    <value>Uscita:</value>
+  </data>
+  <data name="RecordButton" xml:space="preserve">
+    <value>● Registra</value>
+  </data>
+  <data name="StopButton" xml:space="preserve">
+    <value>■ Stop</value>
+  </data>
+  <data name="NoDevice" xml:space="preserve">
+    <value>(nessun dispositivo: si registra il silenzio)</value>
+  </data>
+  <data name="RecordingNotice" xml:space="preserve">
+    <value>Registrazione in corso…</value>
+  </data>
+  <data name="SavingNotice" xml:space="preserve">
+    <value>Salvataggio in corso…</value>
+  </data>
+  <data name="Saved" xml:space="preserve">
+    <value>File salvato: {0}</value>
+  </data>
+  <data name="SavedAsWav" xml:space="preserve">
+    <value>File salvato in formato WAV: {0}. Questa edizione di Windows non ha l'encoder MP3: per salvare in MP3, installa il Media Feature Pack (Impostazioni › App › Funzionalità facoltative › Aggiungi una funzionalità).</value>
+  </data>
+  <data name="CannotFinalize" xml:space="preserve">
+    <value>Impossibile salvare il file della registrazione: {0} La registrazione non mixata è stata conservata in {1}</value>
+  </data>
+  <data name="CannotStart" xml:space="preserve">
+    <value>Impossibile avviare la registrazione: {0}</value>
+  </data>
+  <data name="CannotStop" xml:space="preserve">
+    <value>La registrazione si è interrotta per un errore: {0}</value>
+  </data>
+  <data name="InputFallback" xml:space="preserve">
+    <value>L'ingresso scelto, {0}, non è collegato: al suo posto si registra quello predefinito di Windows, {1}.</value>
+  </data>
+  <data name="OutputFallback" xml:space="preserve">
+    <value>L'uscita scelta, {0}, non è collegata: al suo posto si registra quella predefinita di Windows, {1}.</value>
+  </data>
+  <data name="InputMissing" xml:space="preserve">
+    <value>L'ingresso scelto, {0}, non è collegato e non ce n'è un altro: si registra il silenzio finché non se ne collega uno.</value>
+  </data>
+  <data name="OutputMissing" xml:space="preserve">
+    <value>L'uscita scelta, {0}, non è collegata e non ce n'è un'altra: si registra il silenzio finché non se ne collega una.</value>
+  </data>
+  <data name="InputLost" xml:space="preserve">
+    <value>L'ingresso {0} ha smesso di funzionare: si registra il silenzio finché non torna.</value>
+  </data>
+  <data name="OutputLost" xml:space="preserve">
+    <value>L'uscita {0} ha smesso di funzionare: si registra il silenzio finché non torna.</value>
+  </data>
+  <data name="DiskFull" xml:space="preserve">
+    <value>Il disco è pieno: libera spazio o scegli un'altra cartella.</value>
+  </data>
+  <data name="MicrophoneDenied" xml:space="preserve">
+    <value>Windows non permette a Duettino di usare il microfono, quindi l'ingresso non può essere registrato. Per consentirlo, attiva "Consenti alle app desktop di accedere al microfono" in Impostazioni › Privacy e sicurezza › Microfono.</value>
+  </data>
+  <data name="FolderLabel" xml:space="preserve">
+    <value>Salva in:</value>
+  </data>
+  <data name="ChangeFolderButton" xml:space="preserve">
+    <value>Cambia…</value>
+  </data>
+  <data name="OpenFolderButton" xml:space="preserve">
+    <value>Apri cartella</value>
+  </data>
+  <data name="ChooseFolder" xml:space="preserve">
+    <value>Scegli dove salvare le registrazioni</value>
+  </data>
+  <data name="CannotOpenFolder" xml:space="preserve">
+    <value>Impossibile aprire {0}: {1}</value>
+  </data>
+  <data name="RecoveryHeading" xml:space="preserve">
+    <value>Una registrazione non è stata salvata</value>
+  </data>
+  <data name="RecoveryText" xml:space="preserve">
+    <value>{0} ({1}) è rimasto incompleto, probabilmente perché Duettino o Windows si sono chiusi durante la registrazione.</value>
+  </data>
+  <data name="RecoveryLengthUnknown" xml:space="preserve">
+    <value>durata sconosciuta</value>
+  </data>
+  <data name="RecoverButton" xml:space="preserve">
+    <value>Recupera</value>
+  </data>
+  <data name="RecoverDescription" xml:space="preserve">
+    <value>Salvalo come file della registrazione, come fa Stop</value>
+  </data>
+  <data name="DeleteButton" xml:space="preserve">
+    <value>Elimina</value>
+  </data>
+  <data name="DeleteDescription" xml:space="preserve">
+    <value>Buttalo via (nel Cestino, dove Windows ne tiene uno)</value>
+  </data>
+  <data name="LaterButton" xml:space="preserve">
+    <value>Più tardi</value>
+  </data>
+  <data name="LaterDescription" xml:space="preserve">
+    <value>Tienilo e chiedimelo di nuovo al prossimo avvio di Duettino</value>
+  </data>
+  <data name="CannotFindOrphans" xml:space="preserve">
+    <value>Impossibile cercare registrazioni incomplete in {0}: {1}</value>
+  </data>
+  <data name="CannotDelete" xml:space="preserve">
+    <value>Impossibile eliminare {0}: {1}</value>
+  </data>
+  <data name="StopAndSaveHeading" xml:space="preserve">
+    <value>Fermare e salvare?</value>
+  </data>
+  <data name="StopAndSaveText" xml:space="preserve">
+    <value>Duettino sta registrando: si fermerà, salverà il file della registrazione e poi si chiuderà.</value>
+  </data>
+  <data name="StopAndSaveButton" xml:space="preserve">
+    <value>Ferma e salva</value>
+  </data>
+  <data name="KeepRecordingButton" xml:space="preserve">
+    <value>Continua a registrare</value>
+  </data>
+  <data name="AudioUnavailable" xml:space="preserve">
+    <value>L'audio di Windows non è disponibile: {0}
+Avvia il servizio Audio di Windows, poi riapri Duettino.</value>
+  </data>
+</root>

@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <!-- The UI follows the Windows display language: Strings.resx is English, the fallback for every language but Italian. -->
+    <NeutralLanguage>en</NeutralLanguage>
+    <!-- Only the languages the UI speaks: keeps other languages' framework satellites out of the build. -->
+    <SatelliteResourceLanguages>en;it</SatelliteResourceLanguages>
+    <!-- Explorer's icon for the executable, single-file publish included. Generated from assets/duettino.svg (assets/README.md). -->
+    <ApplicationIcon>Resources\Duettino.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Duettino.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Duettino.Engine\Duettino.Engine.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NAudio.Wasapi" Version="3.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Strongly typed accessor generated at build time, so there is no checked-in Designer file (ADR-0006). -->
+    <EmbeddedResource Update="Resources\Strings.resx">
+      <Generator>MSBuild:Compile</Generator>
+      <StronglyTypedFileName>$(IntermediateOutputPath)Strings.g.cs</StronglyTypedFileName>
+      <StronglyTypedLanguage>CSharp</StronglyTypedLanguage>
+      <StronglyTypedNamespace>Duettino.Resources</StronglyTypedNamespace>
+      <StronglyTypedClassName>Strings</StronglyTypedClassName>
+    </EmbeddedResource>
+    <!-- The window's icon, with every size it is drawn at. -->
+    <EmbeddedResource Include="Resources\Duettino.ico" LogicalName="Duettino.ico" />
+  </ItemGroup>
+
+</Project>

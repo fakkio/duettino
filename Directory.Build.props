@@ -1,0 +1,15 @@
+<Project>
+
+  <PropertyGroup>
+    <Version>0.1.0</Version>
+    <!-- Shown in the executable's Properties > Details; the terms are in LICENSE (MIT). -->
+    <Copyright>Copyright (c) 2026 Fabio Lazzaroni</Copyright>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Symbols inside each assembly: the single-file publish keeps line numbers in stack traces and ships no .pdb beside the executable. -->
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
+</Project>

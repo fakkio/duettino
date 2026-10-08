@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Duettino.Engine/Duettino.Engine.csproj" />
+    <Project Path="src/Duettino/Duettino.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Duettino.Engine.Tests/Duettino.Engine.Tests.csproj" />
+    <Project Path="tests/Duettino.Tests/Duettino.Tests.csproj" />
+  </Folder>
+</Solution>

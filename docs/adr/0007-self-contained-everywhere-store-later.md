@@ -1,0 +1,3 @@
+# Self-contained build on every channel, Microsoft Store later
+
+Duettino ships as one self-contained single-file executable (compressed, ≈50 MB) on GitHub Releases, winget and Scoop, so it runs with no prerequisites. A framework-dependent build would be ≈170 KB but fails on first launch without the .NET 10 Desktop Runtime, showing only an error and a download link, and winget's runtime dependency is unreliable when another runtime version is installed; a first-run error is exactly the friction Duettino exists to remove, so size loses. The Microsoft Store (MSIX, also self-contained) comes with the first stable release, not v1; the name is reserved up front.
