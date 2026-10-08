@@ -67,7 +67,7 @@ Resources loaded at page view, all same-origin:
 
 - `site/src/layouts/Layout.astro:21-37`: `<link rel="canonical">` (self), `<link rel="icon">` x2 and `apple-touch-icon` at `/assets/web/...`; `og:image` / `twitter:image` meta point to `https://duettino.fabiolazzaroni.dev/assets/web/social-dark.png` (our own domain, and only fetched by link-preview crawlers, not by visitors' browsers).
 - Layout inline `<script is:inline>` (reads `localStorage` for the theme; no network) and one Astro `<script type="module">` in the built pages, inlined (no `src`).
-- `<img>`: `/assets/web/icon-light.svg`, `icon-dark.svg`, `demo-placeholder.svg`, all local.
+- `<img>`: `/assets/web/icon-light.svg`, `icon-dark.svg`, `demo.gif`, all local.
 - Fonts: `site/src/styles/base.css:7-16` uses a system font stack (`system-ui`, `"Segoe UI"`, ...), no web fonts, no `@import`, no `url(` in the site styles.
 - `site/src/styles/reset.css:3` has a URL (`https://www.joshwcomeau.com/css/custom-css-reset/`) but only in a comment.
 - `http://www.w3.org/2000/svg` in `DarkToggle.astro:19` and in built SVGs is an XML namespace, never fetched.

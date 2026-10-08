@@ -24,6 +24,6 @@ Then commit the regenerated files: neither the build nor the deploy runs the scr
 | `web/social-light.png` | The light social image: clouds `#ECF0F1` ground, carrot/turquoise bands. Unused for now. |
 | `web/how-it-works-light.svg`, `web/how-it-works-dark.svg` | The README's "How it works" diagram, through a `<picture>`: the two strands, apart beside "What you say" and "What you hear", joining into one MP3. Transparent ground, the icon's light or dark pair and text colors for GitHub's light or dark theme. |
 
-`web/demo-placeholder.svg` is not generated: drawn by hand, it stands in for the README's GIF until the GIF is recorded.
+`web/demo.gif` is not generated: recorded by hand (about 10 s, looped, English window, saving to `D:\Recordings`), it is the README's and the landing page's demo.
 
 The social images set their text in the system's Segoe UI, so the script runs on Windows. It prints the contrast of the headline's letters against each band and stops if one falls below 3:1, a check axe can't make on text over a colored band.

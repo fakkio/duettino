@@ -11,9 +11,7 @@ Con le cuffie, l'altro lato di una call non esce mai dal computer, quindi un reg
 
 Teams e Zoom possono registrare una riunione da soli, ma solo se l'organizzatore o la tua azienda lo permette, e le chiamate di WhatsApp o Discord non si possono registrare. Duettino funziona con tutte, perché registra l'audio del tuo PC, non la chiamata.
 
-<!-- Placeholder until the GIF is recorded: about 10 s, looped, cropped to the window, Italian UI, saving to D:\Recordings.
-     Devices chosen → Record → meters and timer moving → Stop → "Saving…" → "Saved Duettino_….mp3". -->
-![La finestra di Duettino durante una registrazione (un segnaposto per la GIF)](assets/web/demo-placeholder.svg)
+![La finestra di Duettino (qui in inglese): Ingresso e Uscita scelti, Registra premuto, i due indicatori e il timer in movimento, poi Stop e l'MP3 salvato.](assets/web/demo.gif)
 
 ## Scarica
 
