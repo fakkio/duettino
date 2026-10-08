@@ -583,6 +583,8 @@ for (const path of ["/", "/it/"]) {
     const box = await gif.boundingBox();
     expect(Math.round(box.width)).toBe(614);
     expect(Math.round(box.height)).toBe(367);
+    const main = await page.locator("main").boundingBox();
+    expect(Math.abs(box.x + box.width / 2 - (main.x + main.width / 2))).toBeLessThan(2);
     expect((await page.request.get("/assets/web/demo.gif")).ok()).toBe(true);
   });
 }

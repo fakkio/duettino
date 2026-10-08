@@ -40,6 +40,16 @@ main img {
   height: auto;
 }
 
+/* The README centers the demo GIF with align="center", which GitHub understands
+   and an image set to display: block ignores. */
+main p[align="center"] {
+  text-align: center;
+}
+main p[align="center"] img {
+  margin-left: auto;
+  margin-right: auto;
+}
+
 main ul,
 main ol {
   padding-left: 1.25rem;

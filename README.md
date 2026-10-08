@@ -11,7 +11,7 @@ On headphones, the other side of a call never leaves your computer, so a recorde
 
 Teams and Zoom can record a meeting themselves, but only when the organizer or your company allows it, and WhatsApp or Discord calls can't be recorded that way at all. Duettino works with any of them, because it records your own computer, not the call.
 
-<img src="assets/web/demo.gif" alt="Duettino's window: the Input and Output chosen, Record pressed, both meters moving and the timer running, then Stop and the saved MP3." width="614" height="367">
+<p align="center"><img src="assets/web/demo.gif" alt="Duettino's window: the Input and Output chosen, Record pressed, both meters moving and the timer running, then Stop and the saved MP3." width="614" height="367"></p>
 
 ## Download
 
