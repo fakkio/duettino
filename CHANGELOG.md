@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Shorten the landing page footer credit to "Made by Fabio", so the coffee emoji no longer wraps alone onto its own line on phones.
 
+### Fixed
+- Start the window with its sizes scaled on a screen above 100% scaling: the device lists, meters and folder path no longer stay at their 96 DPI size, and the title is no longer cut short (#36).
+
 ## [0.1.0] - 2026-10-08
 
 ### Added
