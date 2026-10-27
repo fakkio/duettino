@@ -69,6 +69,8 @@ sealed class MainForm : Form
     public MainForm()
     {
         // Sizes are given at 96 DPI and scaled to the screen's, at start and whenever the window moves to another one.
+        // The start scaling runs when the layout resumes, so it has to be suspended here and resumed at the end.
+        SuspendLayout();
         AutoScaleDimensions = new SizeF(96F, 96F);
         AutoScaleMode = AutoScaleMode.Dpi;
         Text = Strings.AppTitle;
@@ -129,6 +131,8 @@ sealed class MainForm : Form
 
         SelectSources();
         ShowFolder();
+        ResumeLayout(false);
+        PerformLayout();
     }
 
     /// <remarks>
