@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-27
+
 ### Changed
 - Shorten the landing page footer credit to "Made by Fabio", so the coffee emoji no longer wraps alone onto its own line on phones.
 
@@ -41,5 +43,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add an Italian landing page at `/it/`, adapted rather than translated, and the website's privacy page in Italian, with an EN/IT link in the header and no automatic redirect by browser language (not live until the first release).
 - Give the landing page a 404 page, in English and in Italian for missing pages under `/it/`, and a `humans.txt` naming its author (not live until the first release).
 
-[Unreleased]: https://github.com/fakkio/duettino/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/fakkio/duettino/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/fakkio/duettino/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/fakkio/duettino/releases/tag/v0.1.0
